@@ -3,16 +3,17 @@ from aiogram.filters import Command, CommandStart, StateFilter, Text
 from aiogram.filters.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
-from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.fsm.storage.redis import RedisStorage, Redis
 from aiogram.types import (CallbackQuery, InlineKeyboardButton,
                            InlineKeyboardMarkup, Message, PhotoSize)
 from config import Config, load_config
 
 config: Config = load_config()
 BOT_TOKEN: str = config.tg_bot.token
-
+# Инициализируем Redis
+redis: Redis = Redis(host='localhost')
 # Инициализируем хранилище (создаем экземпляр класса MemoryStorage)
-storage: MemoryStorage = MemoryStorage()
+storage: RedisStorage = RedisStorage(redis=redis)
 
 # Создаем объекты бота и диспетчера
 bot: Bot = Bot(BOT_TOKEN)

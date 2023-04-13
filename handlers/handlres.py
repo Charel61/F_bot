@@ -208,11 +208,32 @@ async def process_wish_news_press(callback: CallbackQuery, state: FSMContext):
     # Завершаем машину состояний
     await state.clear()
     # Отправляем в чат сообщение о выходе из машины состояний
-    await callback.message.edit_text(text='Спасибо! Ваши данные сохранены!'
-                                          )
-    # Отправляем в чат сообщение с предложением посмотреть свою анкету
-    await callback.message.answer(text='Чтобы посмотреть данные вашей '
-                                       'анкеты - отправьте команду /showdata')
+    await callback.message.edit_text(text=LEXICON_RU['saved_data'])
+
+
+    send_button = InlineKeyboardButton(text=LEXICON_RU['send'],
+                                           callback_data='send')
+    dont_send_button = InlineKeyboardButton(text=LEXICON_RU['do_not_send'],
+                                          callback_data='do_not_send')
+    # Добавляем кнопки в клавиатуру в один ряд
+    keyboard: list[list[InlineKeyboardButton]] = [
+                                    [send_button,
+                                     dont_send_button]]
+    # Создаем объект инлайн-клавиатуры
+    markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+
+
+    if callback.from_user.id in user_dict:
+        await callback.message.answer_photo(
+            photo=user_dict[callback.from_user.id]['photo_id'],
+            caption=f'Имя: {user_dict[callback.from_user.id]["name"]}\n'
+                    f'Возраст: {user_dict[callback.from_user.id]["age"]}\n'
+                    f'Пол: {user_dict[callback.from_user.id]["gender"]}\n'
+                    f'Образование: {user_dict[callback.from_user.id]["education"]}\n'
+                    f'Получать новости: {user_dict[callback.from_user.id]["wish_news"]}',reply_markup=markup)
+
+
 
 
 # Этот хэндлер будет срабатывать, если во время согласия на получение

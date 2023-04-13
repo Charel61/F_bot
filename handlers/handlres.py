@@ -185,13 +185,6 @@ async def process_wish_news_press(callback: CallbackQuery, state: FSMContext):
     # по ключу id пользователя
     user_dict[callback.from_user.id] = await state.get_data()
 
-
-
-    # Завершаем машину состояний
-    # await state.clear()
-    # # Отправляем в чат сообщение о всохранении двнных
-    # await callback.message.edit_text(text=LEXICON_RU['saved_data'])
-    # Создаем объект инлайн-клавиатуры
     markup = create_inline_kb(2,'send','do_not_send')
 
     user = show_user(callback.from_user.id)
@@ -199,6 +192,13 @@ async def process_wish_news_press(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer_photo(
             photo=user['photo'],
             caption=user['caption'],reply_markup=markup)
+
+    # Этот хэндлер будет срабатывать, если во время согласия на получение
+    # новостей будет введено/отправлено что-то некорректное
+    @router.message(StateFilter(FSMFillForm.fill_wish_news))
+    async def warning_not_wish_news(message: Message):
+        await message.answer(text=LEXICON_RU['wrong'])
+
 
 # Этот хэндлер будет срабатывать на выбор отправлять или не отправлять анкету
 @router.callback_query(StateFilter(FSMFillForm.fill_send_data), Text(text=['send','do_not_send']))
@@ -217,6 +217,10 @@ async def process_send_data(callback: CallbackQuery, state: FSMContext):
 
     await state.clear()
 
+# Этот хэндлер будет срабатывать, если во время согласия на отправку новостей будет введено, что-то некорректное
+@router.callback_query(StateFilter(FSMFillForm.fill_send_data))
+async def warning_not_send_data(message: Message):
+        await message.answer(text=LEXICON_RU['wrong'])
 
 
 
@@ -227,11 +231,7 @@ async def process_send_data(callback: CallbackQuery, state: FSMContext):
 
 
 
-# Этот хэндлер будет срабатывать, если во время согласия на получение
-# новостей будет введено/отправлено что-то некорректное
-@router.message(StateFilter(FSMFillForm.fill_wish_news))
-async def warning_not_wish_news(message: Message):
-    await message.answer(text=LEXICON_RU['wrong'])
+
 
 
 # Этот хэндлер будет срабатывать на отправку команды /showdata

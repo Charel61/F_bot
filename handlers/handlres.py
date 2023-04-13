@@ -9,33 +9,29 @@ from aiogram.types import (CallbackQuery, InlineKeyboardButton,
 from aiogram import Router, F
 from FSM.fsm import FSMFillForm
 from database.database import user_dict
+
+from lexicon.lexicon import LEXICON_RU
 router: Router = Router()
 
 # Этот хэндлер будет срабатывать на команду /start вне состояний
 # и предлагать перейти к заполнению анкеты, отправив команду /fillform
 @router.message(CommandStart(), StateFilter(default_state))
 async def process_start_command(message: Message):
-    await message.answer(text='Этот бот демонстрирует работу FSM\n\n'
-                              'Чтобы перейти к заполнению анкеты - '
-                              'отправьте команду /fillform')
+    await message.answer(text=LEXICON_RU['/start'])
 
 
 # Этот хэндлер будет срабатывать на команду "/cancel" в состоянии
 # по умолчанию и сообщать, что эта команда работает внутри машины состояний
 @router.message(Command(commands='cancel'), StateFilter(default_state))
 async def process_cancel_command(message: Message):
-    await message.answer(text='Отменять нечего. Вы вне машины состояний\n\n'
-                              'Чтобы перейти к заполнению анкеты - '
-                              'отправьте команду /fillform')
+    await message.answer(text=LEXICON_RU['/cancel'])
 
 
 # Этот хэндлер будет срабатывать на команду "/cancel" в любых состояниях,
 # кроме состояния по умолчанию, и отключать машину состояний
 @router.message(Command(commands='cancel'), ~StateFilter(default_state))
 async def process_cancel_command_state(message: Message, state: FSMContext):
-    await message.answer(text='Вы вышли из машины состояний\n\n'
-                              'Чтобы снова перейти к заполнению анкеты - '
-                              'отправьте команду /fillform')
+    await message.answer(text=LEXICON_RU['/fillform'])
     # Сбрасываем состояние и очищаем данные, полученные внутри состояний
     await state.clear()
 

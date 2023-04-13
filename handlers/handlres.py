@@ -11,6 +11,7 @@ from database.database import user_dict, show_user
 
 from lexicon.lexicon import LEXICON_RU
 from keyboards.keyboard import create_inline_kb
+from config_data.config import load_config, Config
 router: Router = Router()
 
 # Этот хэндлер будет срабатывать на команду /start вне состояний
@@ -174,9 +175,10 @@ async def warning_not_education(message: Message):
 async def process_wish_news_press(callback: CallbackQuery, state: FSMContext):
     # Cохраняем данные о получении новостей по ключу "wish_news"
     await state.update_data(wish_news=callback.data == 'yes')
+    await callback.message.delete()
 
 
-    await state.set_state(FSMFillForm.F)
+    await state.set_state(FSMFillForm.fill_send_data)
 
 
     # Добавляем в "базу данных" анкету пользователя
@@ -197,6 +199,30 @@ async def process_wish_news_press(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer_photo(
             photo=user['photo'],
             caption=user['caption'],reply_markup=markup)
+
+# Этот хэндлер будет срабатывать на выбор отправлять или не отправлять анкету
+@router.callback_query(StateFilter(FSMFillForm.fill_send_data), Text(text=['send','do_not_send']))
+async def process_send_data(callback: CallbackQuery, state: FSMContext):
+    if callback.data == 'send':
+        config: Config = load_config('.env')
+        admin_id: int = config.admin_id
+        await callback.message.forward(chat_id=admin_id)
+        await callback.message.delete()
+
+        # Отправляем в чат сообщение о сохранении двнных
+        await callback.message.answer(text=LEXICON_RU['sent_data'])
+    else:
+        await callback.message.delete()
+        await callback.message.answer(text=LEXICON_RU['/fillform'])
+
+    await state.clear()
+
+
+
+
+
+
+
 
 
 

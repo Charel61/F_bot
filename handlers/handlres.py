@@ -223,17 +223,6 @@ async def warning_not_send_data(message: Message):
         await message.answer(text=LEXICON_RU['wrong'])
 
 
-
-
-
-
-
-
-
-
-
-
-
 # Этот хэндлер будет срабатывать на отправку команды /showdata
 # и отправлять в чат данные анкеты, либо сообщение об отсутствии данных
 @router.message(Command(commands='showdata'), StateFilter(default_state))
@@ -253,4 +242,4 @@ async def process_showdata_command(message: Message):
 # для которых есть отдельные хэндлеры, вне состояний
 @router.message(StateFilter(default_state))
 async def send_echo(message: Message):
-    await message.reply(text='Извините, моя твоя не понимать')
+    await message.reply(text=LEXICON_RU['dont_understand'])

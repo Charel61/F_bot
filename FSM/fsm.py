@@ -15,3 +15,4 @@ class FSMFillForm(StatesGroup):
     upload_photo = State()     # Состояние ожидания загрузки фото
     fill_education = State()   # Состояние ожидания выбора образования
     fill_wish_news = State()   # Состояние ожидания выбора получать ли новости
+    fill_send_data = State()   # Состояние ожидания выбора отправлять ли анкету администратору

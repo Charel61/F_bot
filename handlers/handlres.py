@@ -3,12 +3,11 @@ from aiogram.filters import Command, CommandStart, StateFilter, Text
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 
-from aiogram.types import (CallbackQuery, InlineKeyboardButton,
-                           InlineKeyboardMarkup, Message, PhotoSize)
+from aiogram.types import (CallbackQuery, Message, PhotoSize)
 
 from aiogram import Router, F
 from FSM.fsm import FSMFillForm
-from database.database import user_dict
+from database.database import user_dict, show_user
 
 from lexicon.lexicon import LEXICON_RU
 from keyboards.keyboard import create_inline_kb
@@ -175,27 +174,29 @@ async def warning_not_education(message: Message):
 async def process_wish_news_press(callback: CallbackQuery, state: FSMContext):
     # Cохраняем данные о получении новостей по ключу "wish_news"
     await state.update_data(wish_news=callback.data == 'yes')
+
+
+    await state.set_state(FSMFillForm.F)
+
+
     # Добавляем в "базу данных" анкету пользователя
     # по ключу id пользователя
     user_dict[callback.from_user.id] = await state.get_data()
+
+
+
     # Завершаем машину состояний
-    await state.clear()
-    # Отправляем в чат сообщение о выходе из машины состояний
-    await callback.message.edit_text(text=LEXICON_RU['saved_data'])
-
-
+    # await state.clear()
+    # # Отправляем в чат сообщение о всохранении двнных
+    # await callback.message.edit_text(text=LEXICON_RU['saved_data'])
     # Создаем объект инлайн-клавиатуры
     markup = create_inline_kb(2,'send','do_not_send')
 
+    user = show_user(callback.from_user.id)
 
-    if callback.from_user.id in user_dict:
-        await callback.message.answer_photo(
-            photo=user_dict[callback.from_user.id]['photo_id'],
-            caption=f'Имя: {user_dict[callback.from_user.id]["name"]}\n'
-                    f'Возраст: {user_dict[callback.from_user.id]["age"]}\n'
-                    f'Пол: {user_dict[callback.from_user.id]["gender"]}\n'
-                    f'Образование: {user_dict[callback.from_user.id]["education"]}\n'
-                    f'Получать новости: {user_dict[callback.from_user.id]["wish_news"]}',reply_markup=markup)
+    await callback.message.answer_photo(
+            photo=user['photo'],
+            caption=user['caption'],reply_markup=markup)
 
 
 
@@ -212,14 +213,11 @@ async def warning_not_wish_news(message: Message):
 @router.message(Command(commands='showdata'), StateFilter(default_state))
 async def process_showdata_command(message: Message):
     # Отправляем пользователю анкету, если она есть в "базе данных"
-    if message.from_user.id in user_dict:
+    user = show_user(message.from_user.id)
+    if  user:
         await message.answer_photo(
-            photo=user_dict[message.from_user.id]['photo_id'],
-            caption=f'Имя: {user_dict[message.from_user.id]["name"]}\n'
-                    f'Возраст: {user_dict[message.from_user.id]["age"]}\n'
-                    f'Пол: {user_dict[message.from_user.id]["gender"]}\n'
-                    f'Образование: {user_dict[message.from_user.id]["education"]}\n'
-                    f'Получать новости: {user_dict[message.from_user.id]["wish_news"]}')
+            photo = user['photo'],
+            caption= user['caption'])
     else:
         # Если анкеты пользователя в базе нет - предлагаем заполнить
         await message.answer(text=LEXICON_RU['didnt_fill'])

@@ -11,6 +11,7 @@ from FSM.fsm import FSMFillForm
 from database.database import user_dict
 
 from lexicon.lexicon import LEXICON_RU
+from keyboards.keyboard import create_inline_kb
 router: Router = Router()
 
 # Этот хэндлер будет срабатывать на команду /start вне состояний
@@ -72,19 +73,9 @@ async def warning_not_name(message: Message):
 async def process_age_sent(message: Message, state: FSMContext):
     # Cохраняем возраст в хранилище по ключу "age"
     await state.update_data(age=message.text)
-    # Создаем объекты инлайн-кнопок
-    male_button = InlineKeyboardButton(text=LEXICON_RU['male'],
-                                       callback_data='male')
-    female_button = InlineKeyboardButton(text=LEXICON_RU['female'],
-                                         callback_data='female')
-    undefined_button = InlineKeyboardButton(text=LEXICON_RU['undefined_gender'],
-                                            callback_data='undefined_gender')
-    # Добавляем кнопки в клавиатуру (две в одном ряду и одну в другом)
-    keyboard: list[list[InlineKeyboardButton]] = [[male_button, female_button],
-                                                  [undefined_button]]
     # Создаем объект инлайн-клавиатуры
-    markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
-    # Отправляем пользователю сообщение с клавиатурой
+    markup=create_inline_kb(2,'male','female','undefined_gender')
+       # Отправляем пользователю сообщение с клавиатурой
     await message.answer(text=LEXICON_RU['gender'],
                          reply_markup=markup)
     # Устанавливаем состояние ожидания выбора пола
@@ -133,19 +124,9 @@ async def process_photo_sent(message: Message,
     # по ключам "photo_unique_id" и "photo_id"
     await state.update_data(photo_unique_id=largest_photo.file_unique_id,
                             photo_id=largest_photo.file_id)
-    # Создаем объекты инлайн-кнопок
-    secondary_button = InlineKeyboardButton(text=LEXICON_RU['secondary'],
-                                            callback_data='secondary')
-    higher_button = InlineKeyboardButton(text=LEXICON_RU['higher'],
-                                         callback_data='higher')
-    no_edu_button = InlineKeyboardButton(text=LEXICON_RU['no_edu'],
-                                         callback_data='no_edu')
-    # Добавляем кнопки в клавиатуру (две в одном ряду и одну в другом)
-    keyboard: list[list[InlineKeyboardButton]] = [
-                        [secondary_button, higher_button],
-                        [no_edu_button]]
+
     # Создаем объект инлайн-клавиатуры
-    markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
+    markup = create_inline_kb(2,'secondary','higher','no_edu')
     # Отправляем пользователю сообщение с клавиатурой
     await message.answer(text=LEXICON_RU['edu'],
                          reply_markup=markup)
@@ -168,17 +149,9 @@ async def process_education_press(callback: CallbackQuery, state: FSMContext):
     # Cохраняем данные об образовании по ключу "education"
     await state.update_data(education=callback.data)
     await callback.message.delete()
-    # Создаем объекты инлайн-кнопок
-    yes_news_button = InlineKeyboardButton(text=LEXICON_RU['yes'],
-                                           callback_data='yes_news')
-    no_news_button = InlineKeyboardButton(text=LEXICON_RU['no'],
-                                          callback_data='no_news')
-    # Добавляем кнопки в клавиатуру в один ряд
-    keyboard: list[list[InlineKeyboardButton]] = [
-                                    [yes_news_button,
-                                     no_news_button]]
+
     # Создаем объект инлайн-клавиатуры
-    markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
+    markup = create_inline_kb(2,'yes','no')
     # Редактируем предыдущее сообщение с кнопками, отправляя
     # новый текст и новую клавиатуру
 
@@ -198,10 +171,10 @@ async def warning_not_education(message: Message):
 # Этот хэндлер будет срабатывать на выбор получать или
 # не получать новости и выводить из машины состояний
 @router.callback_query(StateFilter(FSMFillForm.fill_wish_news),
-                   Text(text=['yes_news', 'no_news']))
+                   Text(text=['yes', 'no']))
 async def process_wish_news_press(callback: CallbackQuery, state: FSMContext):
     # Cохраняем данные о получении новостей по ключу "wish_news"
-    await state.update_data(wish_news=callback.data == 'yes_news')
+    await state.update_data(wish_news=callback.data == 'yes')
     # Добавляем в "базу данных" анкету пользователя
     # по ключу id пользователя
     user_dict[callback.from_user.id] = await state.get_data()
@@ -211,17 +184,8 @@ async def process_wish_news_press(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_text(text=LEXICON_RU['saved_data'])
 
 
-    send_button = InlineKeyboardButton(text=LEXICON_RU['send'],
-                                           callback_data='send')
-    dont_send_button = InlineKeyboardButton(text=LEXICON_RU['do_not_send'],
-                                          callback_data='do_not_send')
-    # Добавляем кнопки в клавиатуру в один ряд
-    keyboard: list[list[InlineKeyboardButton]] = [
-                                    [send_button,
-                                     dont_send_button]]
     # Создаем объект инлайн-клавиатуры
-    markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
-
+    markup = create_inline_kb(2,'send','do_not_send')
 
 
     if callback.from_user.id in user_dict:
@@ -258,9 +222,7 @@ async def process_showdata_command(message: Message):
                     f'Получать новости: {user_dict[message.from_user.id]["wish_news"]}')
     else:
         # Если анкеты пользователя в базе нет - предлагаем заполнить
-        await message.answer(text='Вы еще не заполняли анкету. '
-                                  'Чтобы приступить - отправьте '
-                                  'команду /fillform')
+        await message.answer(text=LEXICON_RU['didnt_fill'])
 
 
 # Этот хэндлер будет срабатывать на любые сообщения, кроме тех

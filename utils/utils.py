@@ -23,5 +23,3 @@ def get_time_list(start: int = 8, end: int = 18):
             minute = 0
     time_list.append("18:00")
     return time_list
-
-print(get_time_list())

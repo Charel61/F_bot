@@ -2,8 +2,9 @@
 from aiogram.filters import Command, CommandStart, StateFilter, Text
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
-
+from utils.utils import get_dates
 from aiogram.types import (CallbackQuery, Message, PhotoSize)
+from datetime import date
 
 from aiogram import Router, F
 from FSM.fsm import FSMFillForm
@@ -12,6 +13,9 @@ from database.database import user_dict, show_user
 from lexicon.lexicon import LEXICON_RU
 from keyboards.keyboard import create_inline_kb
 from config_data.config import load_config, Config
+from filters.filters import IsNameSurname
+
+
 router: Router = Router()
 
 # Этот хэндлер будет срабатывать на команду /start вне состояний
@@ -47,14 +51,15 @@ async def process_fillform_command(message: Message, state: FSMContext):
 
 
 # Этот хэндлер будет срабатывать, если введено корректное имя
-# и переводить в состояние ожидания ввода возраста
-@router.message(StateFilter(FSMFillForm.fill_name), F.text.isalpha())
+# и переводить в состояние ожидания ввода даты
+@router.message(StateFilter(FSMFillForm.fill_name), IsNameSurname())
 async def process_name_sent(message: Message, state: FSMContext):
     # Cохраняем введенное имя в хранилище по ключу "name"
     await state.update_data(name=message.text)
-    await message.answer(text=LEXICON_RU['age'])
+    await message.answer(text=LEXICON_RU['date'],reply_markup=create_inline_kb(3,*get_dates(date.today())))
     # Устанавливаем состояние ожидания ввода возраста
-    await state.set_state(FSMFillForm.fill_age)
+    await state.set_state(FSMFillForm.fill_date)
+
 
 
 # Этот хэндлер будет срабатывать, если во время ввода имени
@@ -62,6 +67,23 @@ async def process_name_sent(message: Message, state: FSMContext):
 @router.message(StateFilter(FSMFillForm.fill_name))
 async def warning_not_name(message: Message):
     await message.answer(text=LEXICON_RU['wrong_name'])
+
+
+# Этот хэндлер будет срабатывать, если введено корректная дата
+# и переводить в состояние ожидания ввода возраста
+@router.callback_query(StateFilter(FSMFillForm.fill_date), Text(text=get_dates(date.today())))
+async def process_choice_date(callback: CallbackQuery, state: FSMContext ):
+    await callback.message.edit_text(text=LEXICON_RU['age'])
+    # Устанавливаем состояние ожидания ввода возраста
+    await state.set_state(FSMFillForm.fill_age)
+
+# Этот хэндлер будет срабатывать, если во время ввода даты
+# будет введено что-то некорректное
+@router.message(StateFilter(FSMFillForm.fill_date))
+async def warning_not_date(message: Message):
+    await message.answer(text=LEXICON_RU['wrong'])
+
+
 
 
 

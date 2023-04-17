@@ -56,7 +56,8 @@ async def process_fillform_command(message: Message, state: FSMContext):
 async def process_name_sent(message: Message, state: FSMContext):
     # Cохраняем введенное имя в хранилище по ключу "name"
     await state.update_data(name=message.text)
-    await message.answer(text=LEXICON_RU['date'],reply_markup=create_inline_kb(3,*get_dates(date.today())))
+    markup = create_inline_kb(3,*get_dates(date.today()))
+    await message.answer(text=LEXICON_RU['date'],reply_markup=markup)
     # Устанавливаем состояние ожидания ввода возраста
     await state.set_state(FSMFillForm.fill_date)
 
@@ -74,9 +75,15 @@ async def warning_not_name(message: Message):
 @router.callback_query(StateFilter(FSMFillForm.fill_date), Text(text=get_dates(date.today())))
 async def process_choice_date(callback: CallbackQuery, state: FSMContext ):
     await state.update_data(date_of_vizit=callback.data)
+    await callback.answer(f'Вы выбрали дату {callback.data}', show_alert=True)
+    await callback.message.delete()
+    # Создаем клваиатуру для выбора времени
     time_list = get_time_list()
     markup = create_inline_kb(len(time_list)//3,*time_list)
-    await callback.message.edit_text(text=LEXICON_RU['time'],reply_markup=markup)
+
+    await callback.message.answer(text=LEXICON_RU['time'],reply_markup=markup)
+
+    # устанавливаем состояниие ожидания ввода времени
     await state.set_state(FSMFillForm.fill_time)
 
 # Этот хэндлер будет срабатывать, если во время ввода даты
@@ -93,6 +100,8 @@ async def warning_not_date(message: Message):
 # в состояние ввода возраста
 @router.callback_query(StateFilter(FSMFillForm.fill_time), Text(text=get_time_list()))
 async def process_choice_time(callback: CallbackQuery, state: FSMContext ):
+    await state.update_data(time_of_vizit=callback.data)
+    await callback.answer(f'Вы выбрали время {callback.data}', show_alert=True)
     await callback.message.edit_text(text=LEXICON_RU['age'])
     # Устанавливаем состояние ожидания ввода возраста
     await state.set_state(FSMFillForm.fill_age)

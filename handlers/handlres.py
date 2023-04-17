@@ -125,7 +125,7 @@ async def process_choice_time(callback: CallbackQuery, state: FSMContext ):
     await callback.answer(f'Вы выбрали время {callback.data}', show_alert=True)
     await callback.message.delete()
 
-    markup=create_inline_kb(2,'male','female','undefined_gender')
+    markup=create_inline_kb(2,'male','female')
     # Отправляем пользователю сообщение с клавиатурой
     await callback.message.answer(text=LEXICON_RU['gender'],
                          reply_markup=markup)
@@ -143,33 +143,10 @@ async def process_choice_time(callback: CallbackQuery, state: FSMContext ):
 async def warning_not_time(message: Message):
     await message.answer(text=LEXICON_RU['wrong'])
 
-
-
-
-
-
-# # Этот хэндлер будет срабатывать, если введен корректный возраст
-# # и переводить в состояние выбора пола
-# @router.message(StateFilter(FSMFillForm.fill_age),
-#             lambda x: x.text.isdigit() and 4 <= int(x.text) <= 120)
-# async def process_age_sent(message: Message, state: FSMContext):
-#     # Cохраняем возраст в хранилище по ключу "age"
-#     await state.update_data(age=message.text)
-    # Создаем объект инлайн-клавиатуры
-    # markup=create_inline_kb(2,'male','female','undefined_gender')
-    #    # Отправляем пользователю сообщение с клавиатурой
-    # await message.answer(text=LEXICON_RU['gender'],
-    #                      reply_markup=markup)
-    # # Устанавливаем состояние ожидания выбора пола
-    # await state.set_state(FSMFillForm.fill_gender)
-
-
-
-
 # Этот хэндлер будет срабатывать на нажатие кнопки при
 # выборе пола и переводить в состояние выбора образования
 @router.callback_query(StateFilter(FSMFillForm.fill_gender),
-                   Text(text=['male', 'female', 'undefined_gender']))
+                   Text(text=['male', 'female']))
 async def process_gender_press(callback: CallbackQuery, state: FSMContext):
     # Cохраняем пол (callback.data нажатой кнопки) в хранилище,
     # по ключу "gender"
@@ -177,6 +154,7 @@ async def process_gender_press(callback: CallbackQuery, state: FSMContext):
     # Удаляем сообщение с кнопками, потому что следующий этап - загрузка фото
     # чтобы у пользователя не было желания тыкать кнопки
     await callback.message.delete()
+    # СОздаем клавиатуру для выбора образования
     markup=create_inline_kb(2,'secondary','higher','no_edu')
     await callback.message.answer(text=LEXICON_RU['edu'], reply_markup=markup)
     # Устанавливаем состояние ожидания выбора образования

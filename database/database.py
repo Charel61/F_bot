@@ -2,7 +2,7 @@
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup
 from lexicon.lexicon import LEXICON_RU
 
-user_db: dict[int, dict[str, str | int | bool]] = {}
+user_db: dict[dict[str, str | int | bool]] = {}
 
 def show_user(id: int) -> dict|bool:
     if id in user_db:

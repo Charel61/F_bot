@@ -51,15 +51,13 @@ async def process_fillform_command(message: Message, state: FSMContext):
 
 
 # Этот хэндлер будет срабатывать, если введено корректное имя
-# и переводить в состояние ожидания ввода даты
+# и переводить в состояние ожидания ввода возраста
 @router.message(StateFilter(FSMFillForm.fill_name), IsNameSurname())
 async def process_name_sent(message: Message, state: FSMContext):
     # Cохраняем введенное имя в хранилище по ключу "name"
     await state.update_data(name=message.text)
-    markup = create_inline_kb(3,*get_dates(date.today()))
-    await message.answer(text=LEXICON_RU['date'],reply_markup=markup)
-    # Устанавливаем состояние ожидания ввода возраста
-    await state.set_state(FSMFillForm.fill_date)
+    await message.answer(text=f'{LEXICON_RU["age"]}, <b>{message.text}</b>!', parse_mode='HTML')
+    await state.set_state(FSMFillForm.fill_age)
 
 
 
@@ -68,6 +66,26 @@ async def process_name_sent(message: Message, state: FSMContext):
 @router.message(StateFilter(FSMFillForm.fill_name))
 async def warning_not_name(message: Message):
     await message.answer(text=LEXICON_RU['wrong_name'])
+
+# Этот хэндлер будет срабатывать, если введен корректный возраст
+# и переводить в состояние выбора датф
+@router.message(StateFilter(FSMFillForm.fill_age),
+            lambda x: x.text.isdigit() and 4 <= int(x.text) <= 120)
+async def process_age_sent(message: Message, state: FSMContext):
+    # Cохраняем возраст в хранилище по ключу "age"
+    await state.update_data(age=message.text)
+    markup = create_inline_kb(3,*get_dates(date.today()))
+    await message.answer(text=LEXICON_RU['date'],reply_markup=markup)
+    # Устанавливаем состояние ожидания ввода даты
+    await state.set_state(FSMFillForm.fill_date)
+
+
+# Этот хэндлер будет срабатывать, если во время ввода возраста
+# будет введено что-то некорректное
+@router.message(StateFilter(FSMFillForm.fill_age))
+async def warning_not_age(message: Message):
+    await message.answer(
+        text=LEXICON_RU['wrong_age'])
 
 
 # Этот хэндлер будет срабатывать, если введено корректная дата
@@ -86,6 +104,9 @@ async def process_choice_date(callback: CallbackQuery, state: FSMContext ):
     # устанавливаем состояниие ожидания ввода времени
     await state.set_state(FSMFillForm.fill_time)
 
+
+
+
 # Этот хэндлер будет срабатывать, если во время ввода даты
 # будет введено что-то некорректное
 @router.message(StateFilter(FSMFillForm.fill_date))
@@ -97,22 +118,29 @@ async def warning_not_date(message: Message):
 
 
 #Дописать хэндлер, который будет срабатывать при верно выбранном времени и переключать
-# в состояние ввода возраста
+# в состояние ввода пола
 @router.callback_query(StateFilter(FSMFillForm.fill_time), Text(text=get_time_list()))
 async def process_choice_time(callback: CallbackQuery, state: FSMContext ):
     await state.update_data(time_of_vizit=callback.data)
     await callback.answer(f'Вы выбрали время {callback.data}', show_alert=True)
-    await callback.message.edit_text(text=LEXICON_RU['age'])
-    # Устанавливаем состояние ожидания ввода возраста
-    await state.set_state(FSMFillForm.fill_age)
- # Этот хэндлер будет срабатывать, если во время ввода времени
-# будет введено что-то некорректное
+    await callback.message.delete()
+
+    markup=create_inline_kb(2,'male','female','undefined_gender')
+    # Отправляем пользователю сообщение с клавиатурой
+    await callback.message.answer(text=LEXICON_RU['gender'],
+                         reply_markup=markup)
+    # Устанавливаем состояние ожидания выбора пола
+    await state.set_state(FSMFillForm.fill_gender)
+
+
+
+
 
 
 # Этот хэндлер будет срабатывать, если во время ввода времени
 # будет введено что-то некорректное
 @router.message(StateFilter(FSMFillForm.fill_time))
-async def warning_not_date(message: Message):
+async def warning_not_time(message: Message):
     await message.answer(text=LEXICON_RU['wrong'])
 
 
@@ -120,32 +148,26 @@ async def warning_not_date(message: Message):
 
 
 
-# Этот хэндлер будет срабатывать, если введен корректный возраст
-# и переводить в состояние выбора пола
-@router.message(StateFilter(FSMFillForm.fill_age),
-            lambda x: x.text.isdigit() and 4 <= int(x.text) <= 120)
-async def process_age_sent(message: Message, state: FSMContext):
-    # Cохраняем возраст в хранилище по ключу "age"
-    await state.update_data(age=message.text)
+# # Этот хэндлер будет срабатывать, если введен корректный возраст
+# # и переводить в состояние выбора пола
+# @router.message(StateFilter(FSMFillForm.fill_age),
+#             lambda x: x.text.isdigit() and 4 <= int(x.text) <= 120)
+# async def process_age_sent(message: Message, state: FSMContext):
+#     # Cохраняем возраст в хранилище по ключу "age"
+#     await state.update_data(age=message.text)
     # Создаем объект инлайн-клавиатуры
-    markup=create_inline_kb(2,'male','female','undefined_gender')
-       # Отправляем пользователю сообщение с клавиатурой
-    await message.answer(text=LEXICON_RU['gender'],
-                         reply_markup=markup)
-    # Устанавливаем состояние ожидания выбора пола
-    await state.set_state(FSMFillForm.fill_gender)
+    # markup=create_inline_kb(2,'male','female','undefined_gender')
+    #    # Отправляем пользователю сообщение с клавиатурой
+    # await message.answer(text=LEXICON_RU['gender'],
+    #                      reply_markup=markup)
+    # # Устанавливаем состояние ожидания выбора пола
+    # await state.set_state(FSMFillForm.fill_gender)
 
 
-# Этот хэндлер будет срабатывать, если во время ввода возраста
-# будет введено что-то некорректное
-@router.message(StateFilter(FSMFillForm.fill_age))
-async def warning_not_age(message: Message):
-    await message.answer(
-        text=LEXICON_RU['wrong_age'])
 
 
 # Этот хэндлер будет срабатывать на нажатие кнопки при
-# выборе пола и переводить в состояние отправки фото
+# выборе пола и переводить в состояние выбора образования
 @router.callback_query(StateFilter(FSMFillForm.fill_gender),
                    Text(text=['male', 'female', 'undefined_gender']))
 async def process_gender_press(callback: CallbackQuery, state: FSMContext):

@@ -2,7 +2,7 @@
 from aiogram.filters import Command, CommandStart, StateFilter, Text
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
-from utils.utils import get_dates
+from utils.utils import get_dates, get_time_list
 from aiogram.types import (CallbackQuery, Message, PhotoSize)
 from datetime import date
 
@@ -70,17 +70,39 @@ async def warning_not_name(message: Message):
 
 
 # Этот хэндлер будет срабатывать, если введено корректная дата
-# и переводить в состояние ожидания ввода возраста
+# и переводить в состояние ожидания ввода времени
 @router.callback_query(StateFilter(FSMFillForm.fill_date), Text(text=get_dates(date.today())))
 async def process_choice_date(callback: CallbackQuery, state: FSMContext ):
     await state.update_data(date_of_vizit=callback.data)
-    await callback.message.edit_text(text=LEXICON_RU['age'])
-    # Устанавливаем состояние ожидания ввода возраста
-    await state.set_state(FSMFillForm.fill_age)
+    time_list = get_time_list()
+    markup = create_inline_kb(len(time_list)//3,*time_list)
+    await callback.message.edit_text(text=LEXICON_RU['time'],reply_markup=markup)
+    await state.set_state(FSMFillForm.fill_time)
 
 # Этот хэндлер будет срабатывать, если во время ввода даты
 # будет введено что-то некорректное
 @router.message(StateFilter(FSMFillForm.fill_date))
+async def warning_not_date(message: Message):
+    await message.answer(text=LEXICON_RU['wrong'])
+
+
+
+
+
+#Дописать хэндлер, который будет срабатывать при верно выбранном времени и переключать
+# в состояние ввода возраста
+@router.callback_query(StateFilter(FSMFillForm.fill_time), Text(text=get_time_list()))
+async def process_choice_time(callback: CallbackQuery, state: FSMContext ):
+    await callback.message.edit_text(text=LEXICON_RU['age'])
+    # Устанавливаем состояние ожидания ввода возраста
+    await state.set_state(FSMFillForm.fill_age)
+ # Этот хэндлер будет срабатывать, если во время ввода времени
+# будет введено что-то некорректное
+
+
+# Этот хэндлер будет срабатывать, если во время ввода времени
+# будет введено что-то некорректное
+@router.message(StateFilter(FSMFillForm.fill_time))
 async def warning_not_date(message: Message):
     await message.answer(text=LEXICON_RU['wrong'])
 

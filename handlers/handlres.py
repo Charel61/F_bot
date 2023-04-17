@@ -8,7 +8,7 @@ from datetime import date
 
 from aiogram import Router, F
 from FSM.fsm import FSMFillForm
-from database.database import user_dict, show_user
+from database.database import show_user,user_db
 
 from lexicon.lexicon import LEXICON_RU
 from keyboards.keyboard import create_inline_kb
@@ -73,6 +73,7 @@ async def warning_not_name(message: Message):
 # и переводить в состояние ожидания ввода возраста
 @router.callback_query(StateFilter(FSMFillForm.fill_date), Text(text=get_dates(date.today())))
 async def process_choice_date(callback: CallbackQuery, state: FSMContext ):
+    await state.update_data(date_of_vizit=callback.data)
     await callback.message.edit_text(text=LEXICON_RU['age'])
     # Устанавливаем состояние ожидания ввода возраста
     await state.set_state(FSMFillForm.fill_age)
@@ -123,9 +124,10 @@ async def process_gender_press(callback: CallbackQuery, state: FSMContext):
     # Удаляем сообщение с кнопками, потому что следующий этап - загрузка фото
     # чтобы у пользователя не было желания тыкать кнопки
     await callback.message.delete()
-    await callback.message.answer(text=LEXICON_RU['photo'])
-    # Устанавливаем состояние ожидания загрузки фото
-    await state.set_state(FSMFillForm.upload_photo)
+    markup=create_inline_kb(2,'secondary','higher','no_edu')
+    await callback.message.answer(text=LEXICON_RU['edu'], reply_markup=markup)
+    # Устанавливаем состояние ожидания выбора образования
+    await state.set_state(FSMFillForm.fill_education)
 
 
 # Этот хэндлер будет срабатывать, если во время выбора пола
@@ -133,34 +135,6 @@ async def process_gender_press(callback: CallbackQuery, state: FSMContext):
 @router.message(StateFilter(FSMFillForm.fill_gender))
 async def warning_not_gender(message: Message):
     await message.answer(text=LEXICON_RU['wrong'])
-
-
-# Этот хэндлер будет срабатывать, если отправлено фото
-# и переводить в состояние выбора образования
-@router.message(StateFilter(FSMFillForm.upload_photo),
-            F.photo[-1].as_('largest_photo'))
-async def process_photo_sent(message: Message,
-                             state: FSMContext,
-                             largest_photo: PhotoSize):
-    # Cохраняем данные фото (file_unique_id и file_id) в хранилище
-    # по ключам "photo_unique_id" и "photo_id"
-    await state.update_data(photo_unique_id=largest_photo.file_unique_id,
-                            photo_id=largest_photo.file_id)
-
-    # Создаем объект инлайн-клавиатуры
-    markup = create_inline_kb(2,'secondary','higher','no_edu')
-    # Отправляем пользователю сообщение с клавиатурой
-    await message.answer(text=LEXICON_RU['edu'],
-                         reply_markup=markup)
-    # Устанавливаем состояние ожидания выбора образования
-    await state.set_state(FSMFillForm.fill_education)
-
-
-# Этот хэндлер будет срабатывать, если во время отправки фото
-# будет введено/отправлено что-то некорректное
-@router.message(StateFilter(FSMFillForm.upload_photo))
-async def warning_not_photo(message: Message):
-    await message.answer(text=LEXICON_RU['wrong_photo'])
 
 
 # Этот хэндлер будет срабатывать, если выбрано образование
@@ -205,15 +179,15 @@ async def process_wish_news_press(callback: CallbackQuery, state: FSMContext):
 
     # Добавляем в "базу данных" анкету пользователя
     # по ключу id пользователя
-    user_dict[callback.from_user.id] = await state.get_data()
+    user_db[callback.from_user.id] = await state.get_data()
 
     markup = create_inline_kb(2,'send','do_not_send')
 
     user = show_user(callback.from_user.id)
 
-    await callback.message.answer_photo(
-            photo=user['photo'],
-            caption=user['caption'],reply_markup=markup)
+    await callback.message.answer(
+
+            text=user['text'],reply_markup=markup)
 
     # Этот хэндлер будет срабатывать, если во время согласия на получение
     # новостей будет введено/отправлено что-то некорректное
@@ -252,9 +226,9 @@ async def process_showdata_command(message: Message):
     # Отправляем пользователю анкету, если она есть в "базе данных"
     user = show_user(message.from_user.id)
     if  user:
-        await message.answer_photo(
-            photo = user['photo'],
-            caption= user['caption'])
+        await message.answer(
+
+            text= user['text'])
     else:
         # Если анкеты пользователя в базе нет - предлагаем заполнить
         await message.answer(text=LEXICON_RU['didnt_fill'])

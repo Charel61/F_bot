@@ -17,3 +17,37 @@ def show_user(id: int) -> dict|bool:
 
     else:
         return False
+
+
+
+specialist_db: dict[dict[str, str | int | bool]] = {
+    'speciality_1':{
+        'specialist_1':
+        {'experience':11,'education':LEXICON_RU['higher']},
+        'specialist_2':
+        {'experience':10,'education':LEXICON_RU['higher']},
+        'specialist_3':
+        {'experience':13,'education':LEXICON_RU['secondary']}
+
+    },
+     'speciality_2':{
+        'specialist_4':
+        {'experience':11,'education':LEXICON_RU['higher']},
+        'specialist_5':
+        {'experience':10,'education':LEXICON_RU['higher']},
+        'specialist_6':
+        {'experience':13,'education':LEXICON_RU['secondary']}
+
+    },
+     'speciality_3':{
+        'specialist_9':
+        {'experience':11,'education':LEXICON_RU['higher']},
+        'specialist_8':
+        {'experience':10,'education':LEXICON_RU['higher']},
+        'specialist_10':
+        {'experience':13,'education':LEXICON_RU['secondary']}
+
+    }
+
+
+}

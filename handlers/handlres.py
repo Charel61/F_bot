@@ -8,7 +8,7 @@ from datetime import date
 
 from aiogram import Router, F
 from FSM.fsm import FSMFillForm
-from database.database import show_user,user_db
+from database.database import show_user,user_db, specialist_db
 
 from lexicon.lexicon import LEXICON_RU
 from keyboards.keyboard import create_inline_kb
@@ -154,11 +154,16 @@ async def process_gender_press(callback: CallbackQuery, state: FSMContext):
     # Удаляем сообщение с кнопками, потому что следующий этап - загрузка фото
     # чтобы у пользователя не было желания тыкать кнопки
     await callback.message.delete()
+
+
     # СОздаем клавиатуру для выбора образования
-    markup=create_inline_kb(2,'secondary','higher','no_edu')
+    markup=create_inline_kb(2,*specialist_db.keys())
     await callback.message.answer(text=LEXICON_RU['edu'], reply_markup=markup)
     # Устанавливаем состояние ожидания выбора образования
     await state.set_state(FSMFillForm.fill_education)
+
+
+
 
 
 # Этот хэндлер будет срабатывать, если во время выбора пола

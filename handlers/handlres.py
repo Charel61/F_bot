@@ -8,12 +8,12 @@ from datetime import date
 
 from aiogram import Router, F
 from FSM.fsm import FSMFillForm
-from database.database import show_user,user_db, specialist_db
+from database.database import show_user,user_db, specialist_db, show_specialist
 
 from lexicon.lexicon import LEXICON_RU
 from keyboards.keyboard import create_inline_kb
 from config_data.config import load_config, Config
-from filters.filters import IsNameSurname
+from filters.filters import IsNameSurname, IsSpecialist
 
 
 router: Router = Router()
@@ -117,7 +117,7 @@ async def warning_not_date(message: Message):
 
 
 
-#Дописать хэндлер, который будет срабатывать при верно выбранном времени и переключать
+#хэндлер, который будет срабатывать при верно выбранном времени и переключать
 # в состояние ввода пола
 @router.callback_query(StateFilter(FSMFillForm.fill_time), Text(text=get_time_list()))
 async def process_choice_time(callback: CallbackQuery, state: FSMContext ):
@@ -151,19 +151,15 @@ async def process_gender_press(callback: CallbackQuery, state: FSMContext):
     # Cохраняем пол (callback.data нажатой кнопки) в хранилище,
     # по ключу "gender"
     await state.update_data(gender=callback.data)
-    # Удаляем сообщение с кнопками, потому что следующий этап - загрузка фото
-    # чтобы у пользователя не было желания тыкать кнопки
+    # Удаляем сообщение с кнопками
     await callback.message.delete()
 
 
-    # СОздаем клавиатуру для выбора образования
+    # СОздаем клавиатуру для выбора специальности
     markup=create_inline_kb(2,*specialist_db.keys())
-    await callback.message.answer(text=LEXICON_RU['edu'], reply_markup=markup)
-    # Устанавливаем состояние ожидания выбора образования
-    await state.set_state(FSMFillForm.fill_education)
-
-
-
+    await callback.message.answer(text=LEXICON_RU['choice_speciality'], reply_markup=markup)
+    # Устанавливаем состояние ожидания выбора специальности
+    await state.set_state(FSMFillForm.fill_speciality)
 
 
 # Этот хэндлер будет срабатывать, если во время выбора пола
@@ -172,11 +168,52 @@ async def process_gender_press(callback: CallbackQuery, state: FSMContext):
 async def warning_not_gender(message: Message):
     await message.answer(text=LEXICON_RU['wrong'])
 
+# этот хэндлер будет срабатывать при выборе специальности и переводить
+# пользователя в состояние выбора специалиста
+@router.callback_query(StateFilter(FSMFillForm.fill_speciality,
+                   Text(text=specialist_db.keys())))
+async def process_choice_speciality(callback: CallbackQuery, state: FSMContext):
+    # Cохраняем пол (callback.data нажатой кнопки) в хранилище,
+    # по ключу "speciality"
 
-# Этот хэндлер будет срабатывать, если выбрано образование
+    await state.update_data(speciality=callback.data)
+
+     # СОздаем клавиатуру для выбора специалиста
+    markup=create_inline_kb(2,*specialist_db[callback.data].keys())
+    await callback.message.edit_text(text=LEXICON_RU['choice_specialist'], reply_markup=markup)
+    await state.set_state(FSMFillForm.fill_specialist)
+
+# Этот хэндлер будет срабатывать, если во время ввыбора специальности ввели что-то некорректное
+@router.message(StateFilter(FSMFillForm.fill_speciality))
+async def warning_not_time(message: Message):
+    await message.answer(text=LEXICON_RU['wrong'])
+
+
+
+
+
+
+
+
+#Этот хэндлер будет србатывать при выборе специалиста, показывать
+# информацию о нём и предлагать выбрать его или вернуться к выбору специалистов.
+@router.callback_query(StateFilter(FSMFillForm.fill_specialist),
+                   IsSpecialist())
+async def process_choise_specialist(callback: CallbackQuery, state: FSMContext):
+    specialist = show_specialist(callback.data)
+    await callback.message.edit_text(text=specialist['text'])
+
+
+
+
+
+
+
+
+# Этот хэндлер будет срабатывать, если выбран специалист
 # и переводить в состояние согласия получать новости
-@router.callback_query(StateFilter(FSMFillForm.fill_education),
-                   Text(text=['secondary', 'higher', 'no_edu']))
+@router.callback_query(StateFilter(FSMFillForm.fill_specialist),
+                   Text(text=specialist_db.keys()))
 async def process_education_press(callback: CallbackQuery, state: FSMContext):
     # Cохраняем данные об образовании по ключу "education"
     await state.update_data(education=callback.data)

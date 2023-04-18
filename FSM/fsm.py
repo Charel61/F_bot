@@ -16,6 +16,7 @@ class FSMFillForm(StatesGroup):
     fill_time = State()        #Состояние ожидания выбора времени
     fill_age = State()         # Состояние ожидания ввода возраста
     fill_gender = State()      # Состояние ожидания выбора пола
+    fill_speciality = State() # Состояние ожидания выбора специальности
     fill_specialist = State() # Состояние ожидания выбора специалиста
     fill_education = State()   # Состояние ожидания выбора образования
     fill_wish_news = State()   # Состояние ожидания выбора получать ли новости

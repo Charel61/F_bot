@@ -20,6 +20,7 @@ def show_user(id: int) -> dict|bool:
 
 
 
+
 specialist_db: dict[dict[str, str | int | bool]] = {
     'speciality_1':{
         'specialist_1':
@@ -48,6 +49,18 @@ specialist_db: dict[dict[str, str | int | bool]] = {
         {'experience':13,'education':LEXICON_RU['secondary']}
 
     }
-
-
 }
+def get_specialists():
+    dict_specialist = {}
+    for value in list(specialist_db.values()):
+        dict_specialist |= value
+    return dict_specialist
+
+def show_specialist(specislist):
+    dict_specialist = get_specialists()
+    if specislist in dict_specialist:
+
+        return  {'text':
+        f'{specislist}\nnn'
+        f'Опыт работы: {dict_specialist[specislist]["experience"]}\n'
+        f'Образование: {dict_specialist[specislist]["education"]}'}

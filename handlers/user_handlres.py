@@ -8,7 +8,7 @@ from datetime import date
 
 from aiogram import Router, F
 from FSM.fsm import FSMFillForm
-from database.database import show_user,user_db, specialist_db, show_specialist
+from database.database import show_user,user_db, specialist_db, show_specialist, db_table_val
 
 from lexicon.lexicon import LEXICON_RU
 from keyboards.keyboard import create_inline_kb
@@ -254,7 +254,10 @@ async def process_wish_news_press(callback: CallbackQuery, state: FSMContext):
     # Добавляем в "базу данных" анкету пользователя
     # по ключу id пользователя
     user_db[callback.from_user.id] = await state.get_data()
-
+    db_table_val(user_id=callback.from_user.id,
+                user_name=user_db[callback.from_user.id]['name'],
+                age=user_db[callback.from_user.id]['age'],
+                wish_news=1 if user_db[callback.from_user.id]['wish_news'] else 0 )
     markup = create_inline_kb(2,'send','do_not_send')
 
     user = show_user(callback.from_user.id)

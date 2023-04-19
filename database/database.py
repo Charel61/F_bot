@@ -12,8 +12,10 @@ def show_user(id: int) -> dict|bool:
                     f'Пол: {LEXICON_RU[user_db[id]["gender"]]}\n'
                     f'Дата посещения: {user_db[id]["date_of_vizit"]}\n'
                     f'Время посещения: {user_db[id]["time_of_vizit"]}\n'
-                    f'Образование: {LEXICON_RU[user_db[id]["education"]]}\n'
-                    f'Получать новости: {user_db[id]["wish_news"]}'}
+                    f'Специальность: {user_db[id]["speciality"]}\n'
+                    f'Специалист: {user_db[id]["specialist"]}\n'
+                    f'Получать новости: {user_db[id]["wish_news"]}'
+                    }
 
     else:
         return False
@@ -61,6 +63,6 @@ def show_specialist(specislist):
     if specislist in dict_specialist:
 
         return  {'text':
-        f'{specislist}\nnn'
+        f'{specislist}\n\n\n'
         f'Опыт работы: {dict_specialist[specislist]["experience"]}\n'
         f'Образование: {dict_specialist[specislist]["education"]}'}

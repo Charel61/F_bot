@@ -13,7 +13,11 @@ from database.database import show_user,user_db, specialist_db, show_specialist
 from lexicon.lexicon import LEXICON_RU
 from keyboards.keyboard import create_inline_kb
 from config_data.config import load_config, Config
-from filters.filters import IsNameSurname, IsSpecialist
+from filters.filters import IsNameSurname, IsSpecialist, IsNotAdmin
+
+
+config: Config = load_config('.env')
+admin_id: int = int(config.admin_id)
 
 
 router: Router = Router()
@@ -43,7 +47,7 @@ async def process_cancel_command_state(message: Message, state: FSMContext):
 
 # Этот хэндлер будет срабатывать на команду /fillform
 # и переводить бота в состояние ожидания ввода имени
-@router.message(Command(commands='fillform'), StateFilter(default_state))
+@router.message(Command(commands='fillform'), StateFilter(default_state), IsNotAdmin(admin_id))
 async def process_fillform_command(message: Message, state: FSMContext):
     await message.answer(text=LEXICON_RU['name'])
     # Устанавливаем состояние ожидания ввода имени
@@ -144,13 +148,16 @@ async def warning_not_time(message: Message):
     await message.answer(text=LEXICON_RU['wrong'])
 
 # Этот хэндлер будет срабатывать на нажатие кнопки при
-# выборе пола и переводить в состояние выбора образования
+# выборе пола и переводить в состояние выбора специальности
 @router.callback_query(StateFilter(FSMFillForm.fill_gender),
                    Text(text=['male', 'female']))
+@router.callback_query(StateFilter(FSMFillForm.fill_specialist),
+                   Text(text='back'))
 async def process_gender_press(callback: CallbackQuery, state: FSMContext):
     # Cохраняем пол (callback.data нажатой кнопки) в хранилище,
     # по ключу "gender"
-    await state.update_data(gender=callback.data)
+    if callback.data !='back':
+        await state.update_data(gender=callback.data)
     # Удаляем сообщение с кнопками
     await callback.message.delete()
 
@@ -170,8 +177,9 @@ async def warning_not_gender(message: Message):
 
 # этот хэндлер будет срабатывать при выборе специальности и переводить
 # пользователя в состояние выбора специалиста
-@router.callback_query(StateFilter(FSMFillForm.fill_speciality,
-                   Text(text=specialist_db.keys())))
+@router.callback_query(StateFilter(FSMFillForm.fill_speciality),
+                   Text(text=specialist_db.keys()))
+
 async def process_choice_speciality(callback: CallbackQuery, state: FSMContext):
     # Cохраняем пол (callback.data нажатой кнопки) в хранилище,
     # по ключу "speciality"
@@ -183,10 +191,7 @@ async def process_choice_speciality(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_text(text=LEXICON_RU['choice_specialist'], reply_markup=markup)
     await state.set_state(FSMFillForm.fill_specialist)
 
-# Этот хэндлер будет срабатывать, если во время ввыбора специальности ввели что-то некорректное
-@router.message(StateFilter(FSMFillForm.fill_speciality))
-async def warning_not_time(message: Message):
-    await message.answer(text=LEXICON_RU['wrong'])
+
 
 
 
@@ -201,10 +206,16 @@ async def warning_not_time(message: Message):
                    IsSpecialist())
 async def process_choise_specialist(callback: CallbackQuery, state: FSMContext):
     specialist = show_specialist(callback.data)
-    await callback.message.edit_text(text=specialist['text'])
+    await state.update_data(specialist = callback.data)
+    markup = create_inline_kb(2,'confirm','back')
+    await callback.message.edit_text(text=specialist['text'],reply_markup=markup)
 
 
-
+# Этот хэндлер будет срабатывать, если во время ввыбора специальности или специалиста ввели что-то некорректное
+@router.message(StateFilter(FSMFillForm.fill_speciality))
+@router.message(StateFilter(FSMFillForm.fill_specialist))
+async def warning_not_time(message: Message):
+    await message.answer(text=LEXICON_RU['wrong'])
 
 
 
@@ -213,15 +224,14 @@ async def process_choise_specialist(callback: CallbackQuery, state: FSMContext):
 # Этот хэндлер будет срабатывать, если выбран специалист
 # и переводить в состояние согласия получать новости
 @router.callback_query(StateFilter(FSMFillForm.fill_specialist),
-                   Text(text=specialist_db.keys()))
+                   Text(text='confirm'))
 async def process_education_press(callback: CallbackQuery, state: FSMContext):
-    # Cохраняем данные об образовании по ключу "education"
-    await state.update_data(education=callback.data)
+
     await callback.message.delete()
 
     # Создаем объект инлайн-клавиатуры
     markup = create_inline_kb(2,'yes','no')
-    # Редактируем предыдущее сообщение с кнопками, отправляя
+    # Рудаляем сообщение с кнопками, отправляя
     # новый текст и новую клавиатуру
 
     await callback.message.answer(text=LEXICON_RU['news'],
@@ -229,12 +239,6 @@ async def process_education_press(callback: CallbackQuery, state: FSMContext):
     # Устанавливаем состояние ожидания выбора получать новости или нет
     await state.set_state(FSMFillForm.fill_wish_news)
 
-
-# Этот хэндлер будет срабатывать, если во время выбора образования
-# будет введено/отправлено что-то некорректное
-@router.message(StateFilter(FSMFillForm.fill_education))
-async def warning_not_education(message: Message):
-    await message.answer(text=LEXICON_RU['wrong'])
 
 
 # Этот хэндлер будет срабатывать на выбор получать или
@@ -273,8 +277,7 @@ async def process_wish_news_press(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(StateFilter(FSMFillForm.fill_send_data), Text(text=['send','do_not_send']))
 async def process_send_data(callback: CallbackQuery, state: FSMContext):
     if callback.data == 'send':
-        config: Config = load_config('.env')
-        admin_id: int = config.admin_id
+
         await callback.message.forward(chat_id=admin_id)
         await callback.message.delete()
 

@@ -20,14 +20,11 @@ config: Config = load_config('.env')
 admin_id: int = int(config.admin_id)
 
 
+
+
 router: Router = Router()
 
-# Этот хэндлер будет срабатывать на команду /start вне состояний
-# и предлагать перейти к заполнению анкеты, отправив команду /fillform
-@router.message(CommandStart(), StateFilter(default_state))
-async def process_start_command(message: Message):
-    await message.answer(text=LEXICON_RU['/start'])
-
+router.message.filter(IsNotAdmin(admin_id))
 
 # Этот хэндлер будет срабатывать на команду "/cancel" в состоянии
 # по умолчанию и сообщать, что эта команда работает внутри машины состояний
@@ -47,7 +44,7 @@ async def process_cancel_command_state(message: Message, state: FSMContext):
 
 # Этот хэндлер будет срабатывать на команду /fillform
 # и переводить бота в состояние ожидания ввода имени
-@router.message(Command(commands='fillform'), StateFilter(default_state), IsNotAdmin(admin_id))
+@router.message(Command(commands='fillform'), StateFilter(default_state))
 async def process_fillform_command(message: Message, state: FSMContext):
     await message.answer(text=LEXICON_RU['name'])
     # Устанавливаем состояние ожидания ввода имени
@@ -308,10 +305,3 @@ async def process_showdata_command(message: Message):
     else:
         # Если анкеты пользователя в базе нет - предлагаем заполнить
         await message.answer(text=LEXICON_RU['didnt_fill'])
-
-
-# Этот хэндлер будет срабатывать на любые сообщения, кроме тех
-# для которых есть отдельные хэндлеры, вне состояний
-@router.message(StateFilter(default_state))
-async def send_echo(message: Message):
-    await message.reply(text=LEXICON_RU['dont_understand'])

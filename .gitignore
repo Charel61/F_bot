@@ -5,3 +5,4 @@
 venv/
 __pycache__/
 example.py
+database/database.db

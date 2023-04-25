@@ -1,4 +1,4 @@
-from sqllite_db import engine, User,Speciality, Specialist
+from database.sqllite_db import engine, User,Speciality, Specialist
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 import asyncio
@@ -60,6 +60,13 @@ async def get_speciality(id: int):
         stmt = select(Speciality.name).where(Speciality.id==id)
         return session.scalar(stmt)
 
+async def get_speciality_id(name):
+    with Session(engine) as session:
+        stmt = select(Speciality.id).where(Speciality.name==name)
+        return session.scalar(stmt)
+
+
+
 # Получение списка специальностей
 async def get_list_specialities():
     with Session(engine) as session:
@@ -85,8 +92,16 @@ async def get_list_specialists(speciality_id):
         return session.scalars(stmt).all()
 
 
+def get_list_specialities_not_cor():
+    with Session(engine) as session:
+        stmt = select(Speciality.name)
+        return session.scalars(stmt).all()
 
 
 
-list_speciality=asyncio.run(get_list_specialists(1))
-print(list_speciality)
+
+
+
+
+# list_speciality=asyncio.run(get_list_specialists(1))
+# print(list_speciality)

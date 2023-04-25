@@ -9,12 +9,12 @@ from datetime import date
 from aiogram import Router, F
 from FSM.fsm import FSMFillForm
 from database.database import show_user,user_db, specialist_db, show_specialist
-from database.accessors import add_user
+from database.accessors import add_user, change_user
 
 from lexicon.lexicon import LEXICON_RU
 from keyboards.keyboard import create_inline_kb
 from config_data.config import load_config, Config
-from filters.filters import IsNameSurname, IsSpecialist, IsNotAdmin
+from filters.filters import IsNameSurname, IsSpecialist, IsNotAdmin, KnownUser
 
 
 config: Config = load_config('.env')
@@ -45,8 +45,9 @@ async def process_cancel_command_state(message: Message, state: FSMContext):
 
 # Этот хэндлер будет срабатывать на команду /fillform
 # и переводить бота в состояние ожидания ввода имени
-@router.message(Command(commands='fillform'), StateFilter(default_state))
+@router.message(Command(commands='fillform'), StateFilter(default_state), ~KnownUser())
 async def process_fillform_command(message: Message, state: FSMContext):
+
     await message.answer(text=LEXICON_RU['name'])
     # Устанавливаем состояние ожидания ввода имени
     await state.set_state(FSMFillForm.fill_name)
@@ -117,6 +118,24 @@ async def warning_not_gender(message: Message):
     await message.answer(text=LEXICON_RU['wrong'])
 
 
+
+
+
+
+
+@router.message(Command(commands='fillform'), StateFilter(default_state), KnownUser())
+async def process_fillform_for_known_user(callback: CallbackQuery, state: FSMContext):
+    markup = create_inline_kb(3,*get_dates(date.today()))
+    await callback.answer(text=LEXICON_RU['date'],reply_markup=markup)
+    # Устанавливаем состояние ожидания ввода даты
+    await state.set_state(FSMFillForm.fill_date)
+
+
+
+
+
+
+
 # Этот хэндлер будет срабатывать, если введено корректная дата
 # и переводить в состояние ожидания ввода времени
 @router.callback_query(StateFilter(FSMFillForm.fill_date), Text(text=get_dates(date.today())))
@@ -164,12 +183,6 @@ async def process_choice_time(callback: CallbackQuery, state: FSMContext ):
     # Устанавливаем состояние ожидания выбора специальности
     await state.set_state(FSMFillForm.fill_speciality)
 
-    # markup=create_inline_kb(2,'male','female')
-    # # Отправляем пользователю сообщение с клавиатурой
-    # await callback.message.answer(text=LEXICON_RU['gender'],
-    #                      reply_markup=markup)
-    # # Устанавливаем состояние ожидания выбора пола
-    # await state.set_state(FSMFillForm.fill_gender)
 
 
 
@@ -182,18 +195,6 @@ async def process_choice_time(callback: CallbackQuery, state: FSMContext ):
 async def warning_not_time(message: Message):
     await message.answer(text=LEXICON_RU['wrong'])
 
-# Этот хэндлер будет срабатывать на нажатие кнопки при
-# выборе времнии переводить в состояние выбора специальности
-
-
-
-
-
-    # # СОздаем клавиатуру для выбора специальности
-    # markup=create_inline_kb(2,*specialist_db.keys())
-    # await callback.message.answer(text=LEXICON_RU['choice_speciality'], reply_markup=markup)
-    # # Устанавливаем состояние ожидания выбора специальности
-    # await state.set_state(FSMFillForm.fill_speciality)
 
 
 # этот хэндлер будет срабатывать при выборе специальности и переводить
@@ -263,9 +264,9 @@ async def process_education_press(callback: CallbackQuery, state: FSMContext):
 
 
 # Этот хэндлер будет срабатывать на выбор получать или
-# не получать новости и выводить из машины состояний
+# не получать новости для нового пользователя и выводить из машины состояний
 @router.callback_query(StateFilter(FSMFillForm.fill_wish_news),
-                   Text(text=['yes', 'no']))
+                   Text(text=['yes', 'no']), ~KnownUser())
 async def process_wish_news_press(callback: CallbackQuery, state: FSMContext):
     # Cохраняем данные о получении новостей по ключу "wish_news"
     await state.update_data(wish_news=callback.data == 'yes')
@@ -290,6 +291,36 @@ async def process_wish_news_press(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer(
 
             text=user['text'],reply_markup=markup)
+
+
+# Этот хэндлер будет срабатывать на выбор получать или
+# не получать новости для старого пользователя и выводить из машины состояний
+@router.callback_query(StateFilter(FSMFillForm.fill_wish_news),
+                   Text(text=['yes', 'no']), KnownUser())
+async def process_wish_news_press_for_known_user(callback: CallbackQuery, state: FSMContext):
+    # Cохраняем данные о получении новостей по ключу "wish_news"
+    await state.update_data(wish_news=callback.data == 'yes')
+    await callback.message.delete()
+
+    await state.set_state(FSMFillForm.fill_send_data)
+
+
+    # Добавляем в "базу данных" анкету пользователя
+    # по ключу id пользователя
+    user_db[callback.from_user.id] = await state.get_data()
+    await change_user(user_id=callback.from_user.id,
+
+                wish_news=user_db[callback.from_user.id]['wish_news'])
+    markup = create_inline_kb(2,'send','do_not_send')
+
+    user = show_user(callback.from_user.id)
+
+    await callback.message.answer(
+
+            text=user['text'],reply_markup=markup)
+
+
+
 
     # Этот хэндлер будет срабатывать, если во время согласия на получение
     # новостей будет введено/отправлено что-то некорректное

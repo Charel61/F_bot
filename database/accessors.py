@@ -17,7 +17,24 @@ async def add_user(user_id,name,gender,age, wish_news):
 
         session.commit()
 
-async def change_user(user_id,name,gender,age, wish_news):
+async def get_list_user_id():
+    with Session(engine) as session:
+        stmt = select(User.user_id)
+        return session.scalars(stmt).all()
+
+async def get_user(user_id):
+    with Session(engine) as session:
+        stmt = select(User).where(User.user_id == user_id)
+        return session.scalar(stmt)
+
+
+
+
+
+
+
+
+async def change_user(user_id: int ,name: str | None,gender: str | None, age:  int | None, wish_news: bool | None):
     with Session(engine) as session:
         stmt = select(User).where(User.user_id == user_id)
         if session.scalar(stmt):

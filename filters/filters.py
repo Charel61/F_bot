@@ -2,6 +2,7 @@ from aiogram.filters import BaseFilter
 from aiogram.types import CallbackQuery, Message
 from database.database import specialist_db, get_specialists
 from config_data.config import Config, load_config
+from database.accessors import get_list_user_id
 
 
 
@@ -31,3 +32,12 @@ class IsNotAdmin(BaseFilter):
     async def __call__(self, message: Message) -> bool:
 
         return message.from_user.id != self.admin_id
+
+
+class KnownUser(BaseFilter):
+     async def __call__(self, message: Message) -> bool:
+        list_id = await get_list_user_id()
+        print(list_id)
+        print(message.from_user.id not in list_id)
+
+        return message.from_user.id in list_id

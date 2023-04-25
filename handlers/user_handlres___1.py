@@ -14,7 +14,7 @@ from database.accessors import add_user
 from lexicon.lexicon import LEXICON_RU
 from keyboards.keyboard import create_inline_kb
 from config_data.config import load_config, Config
-from filters.filters import IsNameSurname, IsSpecialist, IsNotAdmin
+from filters.filters import IsNameSurname, IsSpecialist, IsNotAdmin, UnknownUser
 
 
 config: Config = load_config('.env')
@@ -45,7 +45,7 @@ async def process_cancel_command_state(message: Message, state: FSMContext):
 
 # Этот хэндлер будет срабатывать на команду /fillform
 # и переводить бота в состояние ожидания ввода имени
-@router.message(Command(commands='fillform'), StateFilter(default_state))
+@router.message(Command(commands='fillform'), StateFilter(default_state), UnknownUser())
 async def process_fillform_command(message: Message, state: FSMContext):
     await message.answer(text=LEXICON_RU['name'])
     # Устанавливаем состояние ожидания ввода имени

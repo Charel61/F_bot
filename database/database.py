@@ -1,15 +1,5 @@
 
-from aiogram.types import CallbackQuery, InlineKeyboardMarkup
 from lexicon.lexicon import LEXICON_RU
-
-
-# conn = sqlite3.connect('database/database.db', check_same_thread=False)
-# cursor = conn.cursor()
-
-
-# def db_table_val(user_id: int, user_name: str, age: int, wish_news: bool):
-# 	cursor.execute('INSERT INTO users (user_id, name, age, wish_news) VALUES (?, ?, ?, ?)', (user_id, user_name, age, wish_news))
-# 	conn.commit()
 
 user_db: dict[dict[str, str | int | bool]] = {}
 

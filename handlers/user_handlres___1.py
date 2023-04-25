@@ -70,18 +70,16 @@ async def warning_not_name(message: Message):
     await message.answer(text=LEXICON_RU['wrong_name'])
 
 # Этот хэндлер будет срабатывать, если введен корректный возраст
-# и переводить в состояние выбора пола
+# и переводить в состояние выбора датф
 @router.message(StateFilter(FSMFillForm.fill_age),
             lambda x: x.text.isdigit() and 4 <= int(x.text) <= 120)
 async def process_age_sent(message: Message, state: FSMContext):
     # Cохраняем возраст в хранилище по ключу "age"
     await state.update_data(age=message.text)
-    markup=create_inline_kb(2,'male','female')
-    # Отправляем пользователю сообщение с клавиатурой
-    await message.answer(text=LEXICON_RU['gender'],
-                         reply_markup=markup)
-    # Устанавливаем состояние ожидания выбора пола
-    await state.set_state(FSMFillForm.fill_gender)
+    markup = create_inline_kb(3,*get_dates(date.today()))
+    await message.answer(text=LEXICON_RU['date'],reply_markup=markup)
+    # Устанавливаем состояние ожидания ввода даты
+    await state.set_state(FSMFillForm.fill_date)
 
 
 # Этот хэндлер будет срабатывать, если во время ввода возраста
@@ -90,31 +88,6 @@ async def process_age_sent(message: Message, state: FSMContext):
 async def warning_not_age(message: Message):
     await message.answer(
         text=LEXICON_RU['wrong_age'])
-
-
-
-
-@router.callback_query(StateFilter(FSMFillForm.fill_gender),
-                   Text(text=['male', 'female']))
-async def process_gender_press(callback: CallbackQuery, state: FSMContext):
-    # Cохраняем пол (callback.data нажатой кнопки) в хранилище,
-    # по ключу "gender"
-
-    await state.update_data(gender=callback.data)
-    # Удаляем сообщение с кнопками
-    await callback.message.delete()
-    markup = create_inline_kb(3,*get_dates(date.today()))
-    await callback.message.answer(text=LEXICON_RU['date'],reply_markup=markup)
-    # Устанавливаем состояние ожидания ввода даты
-    await state.set_state(FSMFillForm.fill_date)
-
-
-
-# Этот хэндлер будет срабатывать, если во время выбора пола
-# будет введено/отправлено что-то некорректное
-@router.message(StateFilter(FSMFillForm.fill_gender))
-async def warning_not_gender(message: Message):
-    await message.answer(text=LEXICON_RU['wrong'])
 
 
 # Этот хэндлер будет срабатывать, если введено корректная дата
@@ -136,7 +109,6 @@ async def process_choice_date(callback: CallbackQuery, state: FSMContext ):
 
 
 
-
 # Этот хэндлер будет срабатывать, если во время ввода даты
 # будет введено что-то некорректное
 @router.message(StateFilter(FSMFillForm.fill_date))
@@ -148,28 +120,19 @@ async def warning_not_date(message: Message):
 
 
 #хэндлер, который будет срабатывать при верно выбранном времени и переключать
-# в состояние выбора специальности
-@router.callback_query(StateFilter(FSMFillForm.fill_specialist),
-                   Text(text='back'))
+# в состояние ввода пола
 @router.callback_query(StateFilter(FSMFillForm.fill_time), Text(text=get_time_list()))
 async def process_choice_time(callback: CallbackQuery, state: FSMContext ):
-    if callback.data !='back':
-        await state.update_data(time_of_vizit=callback.data)
-        await callback.answer(f'Вы выбрали время {callback.data}', show_alert=True)
+    await state.update_data(time_of_vizit=callback.data)
+    await callback.answer(f'Вы выбрали время {callback.data}', show_alert=True)
     await callback.message.delete()
 
-    # СОздаем клавиатуру для выбора специальности
-    markup=create_inline_kb(2,*specialist_db.keys())
-    await callback.message.answer(text=LEXICON_RU['choice_speciality'], reply_markup=markup)
-    # Устанавливаем состояние ожидания выбора специальности
-    await state.set_state(FSMFillForm.fill_speciality)
-
-    # markup=create_inline_kb(2,'male','female')
-    # # Отправляем пользователю сообщение с клавиатурой
-    # await callback.message.answer(text=LEXICON_RU['gender'],
-    #                      reply_markup=markup)
-    # # Устанавливаем состояние ожидания выбора пола
-    # await state.set_state(FSMFillForm.fill_gender)
+    markup=create_inline_kb(2,'male','female')
+    # Отправляем пользователю сообщение с клавиатурой
+    await callback.message.answer(text=LEXICON_RU['gender'],
+                         reply_markup=markup)
+    # Устанавливаем состояние ожидания выбора пола
+    await state.set_state(FSMFillForm.fill_gender)
 
 
 
@@ -183,18 +146,32 @@ async def warning_not_time(message: Message):
     await message.answer(text=LEXICON_RU['wrong'])
 
 # Этот хэндлер будет срабатывать на нажатие кнопки при
-# выборе времнии переводить в состояние выбора специальности
+# выборе пола и переводить в состояние выбора специальности
+@router.callback_query(StateFilter(FSMFillForm.fill_gender),
+                   Text(text=['male', 'female']))
+@router.callback_query(StateFilter(FSMFillForm.fill_specialist),
+                   Text(text='back'))
+async def process_gender_press(callback: CallbackQuery, state: FSMContext):
+    # Cохраняем пол (callback.data нажатой кнопки) в хранилище,
+    # по ключу "gender"
+    if callback.data !='back':
+        await state.update_data(gender=callback.data)
+    # Удаляем сообщение с кнопками
+    await callback.message.delete()
 
 
+    # СОздаем клавиатуру для выбора специальности
+    markup=create_inline_kb(2,*specialist_db.keys())
+    await callback.message.answer(text=LEXICON_RU['choice_speciality'], reply_markup=markup)
+    # Устанавливаем состояние ожидания выбора специальности
+    await state.set_state(FSMFillForm.fill_speciality)
 
 
-
-    # # СОздаем клавиатуру для выбора специальности
-    # markup=create_inline_kb(2,*specialist_db.keys())
-    # await callback.message.answer(text=LEXICON_RU['choice_speciality'], reply_markup=markup)
-    # # Устанавливаем состояние ожидания выбора специальности
-    # await state.set_state(FSMFillForm.fill_speciality)
-
+# Этот хэндлер будет срабатывать, если во время выбора пола
+# будет введено/отправлено что-то некорректное
+@router.message(StateFilter(FSMFillForm.fill_gender))
+async def warning_not_gender(message: Message):
+    await message.answer(text=LEXICON_RU['wrong'])
 
 # этот хэндлер будет срабатывать при выборе специальности и переводить
 # пользователя в состояние выбора специалиста

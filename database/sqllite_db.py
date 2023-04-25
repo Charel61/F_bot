@@ -1,6 +1,7 @@
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Session, relationship
 from sqlalchemy import select, ForeignKey, create_engine, Column, Integer, String, ForeignKey, Boolean
+import asyncio
 
 
 
@@ -22,7 +23,7 @@ class User(Base):
     age = Column(Integer)
     wish_news = Column(Boolean, default=True)
 
-    def __init__(self, user_id, name,gender,age, wish_news = True):
+    def __init__(self, user_id, name,gender,age, wish_news ):
         self.user_id = user_id
         self.name = name
         self.gender = gender
@@ -66,10 +67,40 @@ class Specialist(Base):
 
 Base.metadata.create_all(engine)
 
-def add_user(user_id,name,gender,age, wish_news):
+async def add_user(user_id,name,gender,age, wish_news):
 
     with Session(engine) as session:
-        user =User(user_id,name,gender,age, wish_news)
-        if user.id not in session.query(User.user_id).all():
+        stmt = select(User).where(User.user_id == user_id)
+        if not session.scalar(stmt):
+
+            user =User(user_id,name,gender,age, wish_news)
             session.add(user)
+
         session.commit()
+
+async def change_user(user_id,name,gender,age, wish_news):
+    with Session(engine) as session:
+        stmt = select(User).where(User.user_id == user_id)
+        if session.scalar(stmt):
+
+            user = session.scalar(stmt)
+            user.name = name
+            user.gender = gender
+            user.age = age
+            user.wish_news = wish_news
+        session.commit()
+
+
+asyncio.run(change_user(480772923, 'huhuhu', 'male', 34, False))
+
+
+
+# with Session(engine) as session:
+#     user_id = 48077292
+#     stmt = select(User).where(User.user_id == user_id)
+#     user = session.scalar(stmt)
+#     print(session.scalar(stmt))
+
+    # if session.query(User).filter(User.user_id==user_id).all():
+    #     print(session.query(User).filter(User.user_id==user_id).all())
+    #    / session.query(User).filter(User.user_id==user_id).update(user_id = 44545)

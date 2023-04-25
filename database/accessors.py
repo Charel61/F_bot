@@ -27,6 +27,9 @@ async def get_user(user_id):
         stmt = select(User).where(User.user_id == user_id)
         return session.scalar(stmt)
 
+# user = asyncio.run(get_user(480772923))
+# print(user.user_id)
+
 
 
 

@@ -9,7 +9,7 @@ from datetime import date
 from aiogram import Router, F
 from FSM.fsm import FSMFillForm
 from database.database import show_user,user_db, specialist_db, show_specialist
-from database.accessors import add_user, change_user
+from database.accessors import add_user, change_user, get_user
 
 from lexicon.lexicon import LEXICON_RU
 from keyboards.keyboard import create_inline_kb
@@ -308,12 +308,13 @@ async def process_wish_news_press_for_known_user(callback: CallbackQuery, state:
     # Добавляем в "базу данных" анкету пользователя
     # по ключу id пользователя
     user_db[callback.from_user.id] = await state.get_data()
-    await change_user(user_id=callback.from_user.id,
-
+    user = await get_user(callback.from_user.id)
+    await change_user(user_id=user.user_id, name=user.name, gender=user.gender,
+                age=user.age,
                 wish_news=user_db[callback.from_user.id]['wish_news'])
     markup = create_inline_kb(2,'send','do_not_send')
 
-    user = show_user(callback.from_user.id)
+    user = await show_user(callback.from_user.id)
 
     await callback.message.answer(
 
@@ -356,7 +357,7 @@ async def warning_not_send_data(message: Message):
 @router.message(Command(commands='showdata'), StateFilter(default_state))
 async def process_showdata_command(message: Message):
     # Отправляем пользователю анкету, если она есть в "базе данных"
-    user = show_user(message.from_user.id)
+    user = await show_user(message.from_user.id)
     if  user:
         await message.answer(
 

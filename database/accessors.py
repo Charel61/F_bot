@@ -1,10 +1,10 @@
-from database.sqllite_db import engine, User
+from sqllite_db import engine, User,Speciality, Specialist
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 import asyncio
 
 
-
+# aДобавляет пользователя в базу данных
 
 async def add_user(user_id,name,gender,age, wish_news):
 
@@ -17,6 +17,8 @@ async def add_user(user_id,name,gender,age, wish_news):
 
         session.commit()
 
+
+# возвращает список id пользователей
 async def get_list_user_id():
     with Session(engine) as session:
         stmt = select(User.user_id)
@@ -27,15 +29,7 @@ async def get_user(user_id):
         stmt = select(User).where(User.user_id == user_id)
         return session.scalar(stmt)
 
-# user = asyncio.run(get_user(480772923))
-# print(user.user_id)
-
-
-
-
-
-
-
+# изменяет пользователя
 
 async def change_user(user_id: int ,name: str | None,gender: str | None, age:  int | None, wish_news: bool | None):
     with Session(engine) as session:
@@ -48,3 +42,51 @@ async def change_user(user_id: int ,name: str | None,gender: str | None, age:  i
             user.age = age
             user.wish_news = wish_news
         session.commit()
+
+
+# Добавление специальности
+async def add_speciality(name: str):
+    with Session(engine) as session:
+        stmt = select(Speciality).where(Speciality.name == name)
+        if not session.scalar(stmt):
+
+            speciality =Speciality(name)
+            session.add(speciality)
+
+        session.commit()
+# получение специальности по id
+async def get_speciality(id: int):
+    with Session(engine) as session:
+        stmt = select(Speciality.name).where(Speciality.id==id)
+        return session.scalar(stmt)
+
+# Получение списка специальностей
+async def get_list_specialities():
+    with Session(engine) as session:
+        stmt = select(Speciality.name)
+        return session.scalars(stmt).all()
+
+
+# Добавление специалиста
+async def add_specialist(name: str, experience:int, speciality_id: int):
+    with Session(engine) as session:
+        stmt = select(Specialist).where(Specialist.name == name, Specialist.speciality_id == speciality_id)
+        if not session.scalar(stmt):
+
+            speciality = Specialist(name, experience, speciality_id)
+            session.add(speciality)
+
+        session.commit()
+
+# получения списка специалистов по специальности
+async def get_list_specialists(speciality_id):
+    with Session(engine) as session:
+        stmt = select(Specialist.name).where(Specialist.speciality_id==speciality_id)
+        return session.scalars(stmt).all()
+
+
+
+
+
+list_speciality=asyncio.run(get_list_specialists(1))
+print(list_speciality)

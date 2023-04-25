@@ -18,6 +18,9 @@ async def process_start_command(message: Message):
     await message.answer(text=LEXICON_RU['/start'])
 
 
+@router
+
+
 
 # Этот хэндлер будет срабатывать на любые сообщения, кроме тех
 # для которых есть отдельные хэндлеры, вне состояний

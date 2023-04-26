@@ -92,10 +92,6 @@ async def get_list_specialists(speciality_id):
         return session.scalars(stmt).all()
 
 
-def get_list_specialities_not_cor():
-    with Session(engine) as session:
-        stmt = select(Speciality.name)
-        return session.scalars(stmt).all()
 
 
 

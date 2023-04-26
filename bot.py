@@ -4,7 +4,7 @@ import logging
 from aiogram.fsm.storage.redis import RedisStorage, Redis
 from aiogram import Bot, Dispatcher
 from config_data.config import Config, load_config
-from handlers import user_handlres, other_handlers
+from handlers import manager_handlers, user_handlres, other_handlers
 from keyboards.main_menu import set_main_menu
 
 
@@ -41,7 +41,9 @@ async def main():
     # Регистриуем роутеры в диспетчере
 
     dp.include_router(user_handlres.router)
+    dp.include_router(manager_handlers.router)
     dp.include_router(other_handlers.router)
+
 
     await set_main_menu(bot)
 

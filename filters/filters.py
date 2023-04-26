@@ -2,7 +2,7 @@ from aiogram.filters import BaseFilter
 from aiogram.types import CallbackQuery, Message
 from database.database import specialist_db, get_specialists
 from config_data.config import Config, load_config
-from database.accessors import get_list_user_id
+from database.accessors import get_list_user_id, get_list_specialities
 
 
 
@@ -23,6 +23,20 @@ class IsSpecialist(BaseFilter):
             return callback.data
         else:
             return False
+
+
+#Фильтр проверяет есть ли  специальность в БД MysQLlite
+class IsSpeciality(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        list_specialities = await get_list_specialities()
+        if callback.data in list_specialities:
+            return callback.data
+        else:
+            return False
+
+
+
+
 
 
 class IsNotAdmin(BaseFilter):

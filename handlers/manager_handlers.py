@@ -2,7 +2,7 @@
 
 from aiogram.filters import CommandStart, StateFilter, Command, Text
 from aiogram.fsm.state import default_state
-from FSM.fsm import FSMAddSpecialist, FSMManager
+from FSM.fsm import FSMAddSpecialist, FSMManager, FSMAddSpeciality
 
 from aiogram.types import  Message, CallbackQuery
 
@@ -12,7 +12,7 @@ from filters.filters import IsNameSurname, IsSpeciality, IsNotAdmin
 
 from lexicon.lexicon import LEXICON_RU
 from keyboards.keyboard import create_inline_kb
-from database.accessors import get_list_specialities, get_speciality_id, get_speciality, add_specialist
+from database.accessors import get_list_specialities, get_speciality_id, get_speciality, add_specialist, add_speciality
 from config_data.config import load_config, Config
 
 router: Router = Router()
@@ -44,7 +44,7 @@ async def process_manage_db_command_state(message: Message, state: FSMContext):
 
 
 
-# Этот хэндлер будет срабатывать на команду /add_specialist вне состояний
+# Этот хэндлер будет срабатывать на команду /add_specialist в состоянии управления БД
 # и предлагать добавить специалиста в базу данных
 @router.message(Command(commands='add_specialist'),StateFilter(FSMManager.manage_db))
 async def procces_add_specialist(message: Message, state: FSMContext):
@@ -60,7 +60,7 @@ async def procces_add_specialist(message: Message, state: FSMContext):
 async def procces_add_specialist_name(message: Message, state: FSMContext):
     await state.update_data(name_specialist=message.text)
     list_specialities =await get_list_specialities()
-    markup=create_inline_kb(3,*list_specialities )
+    markup=create_inline_kb(1,*list_specialities )
 
     await message.answer(text=LEXICON_RU['choice_speciality'], reply_markup=markup)
     await state.set_state(FSMAddSpecialist.fill_speciality)
@@ -87,7 +87,8 @@ async def procces_add_specialist_speciality(callback: CallbackQuery, state: FSMC
 # Этот хэндлер будет срабатывать, если во время ввода cспециальности
 # будет введено что-то некорректное
 @router.message(StateFilter(FSMAddSpecialist.fill_speciality))
-async def warning_not_date(message: Message):
+@router.message(StateFilter(FSMAddSpeciality.add_speciality))
+async def warning_not_speciality(message: Message):
     await message.answer(text=LEXICON_RU['wrong'])
 
 # Этот хэндлер будет срабатывать при правильно введенном стаже и предлагать
@@ -109,33 +110,70 @@ async def process_add_specialist_expirience(message: Message, state: FSMContext)
 # Этот хэндлер будет срабатывать, если во время ввода cтажа
 # будет введено что-то некорректное
 @router.message(StateFilter(FSMAddSpecialist.fill_expirience))
-async def warning_not_date(message: Message):
+async def warning_not_exp(message: Message):
     await message.answer(text=LEXICON_RU['wrong_exp'])
 
 
-
+# Этот хэндлер будет срабатывать при подтверждении или отмене ввода данных
 @router.callback_query(Text(text=['confirm','back']), StateFilter(FSMAddSpecialist.add_data))
 async def process_add_specialist_to_db(callback: CallbackQuery, state: FSMContext):
     if callback.data == 'confirm':
         specialist = await state.get_data()
         await add_specialist(name=specialist['name_specialist'], experience=specialist['expirience'],speciality_id=specialist['speciality_id'])
-        await callback.message.delete()
-        await callback.message.answer(text=LEXICON_RU['/manage_db'])
-
-
-
-    else:
-        await callback.message.delete()
-        await callback.message.answer(text=LEXICON_RU['/manage_db'])
-
+    await callback.message.delete()
+    await callback.message.answer(text=LEXICON_RU['/manage_db'])
     await state.clear()
+
+
+
+
+# Этот хэндлер будет срабатывать на команду /add_speciality в состоянии управления БД
+# и предлагать добавить специалиста в базу данных
+@router.message(Command(commands='add_speciality'),StateFilter(FSMManager.manage_db))
+async def procces_add_specialist(message: Message, state: FSMContext):
+    await message.answer(text=LEXICON_RU['/add_speciality'])
+    await state.set_state(FSMAddSpeciality.add_speciality)
+
+
+# Этот хэндлер будет срабатывать при правильно введенной специальности и предлагать сохранить данные
+@router.message(IsNameSurname(), StateFilter(FSMAddSpeciality.add_speciality))
+async def procces_add_specialist_name(message: Message, state: FSMContext):
+    await state.update_data(speciality=message.text)
+    markup = create_inline_kb(2,'confirm','back')
+    await message.reply(text=f'Добоавить в БД специальность {message.text}?',reply_markup=markup)
+    await state.set_state(FSMAddSpeciality.add_data)
+
+
+
+
+
+
+
+# Этот хэндлер будет срабатывать при подтверждении или отмене ввода данных
+@router.callback_query(Text(text=['confirm','back']), StateFilter(FSMAddSpeciality.add_data))
+async def process_add_specialist_to_db(callback: CallbackQuery, state: FSMContext):
+    if callback.data == 'confirm':
+        specialist = await state.get_data()
+        await add_speciality(specialist['speciality'])
+    await callback.message.delete()
+    await callback.message.answer(text=LEXICON_RU['/manage_db'])
+    await state.clear()
+
+
+
+
+
 
 
 # Этот хэндлер будет срабатывать, если во время подтверждения
 # будет введено что-то некорректное
-@router.message(StateFilter(FSMAddSpecialist.fill_speciality))
-async def warning_not_date(message: Message):
+@router.message(StateFilter(FSMAddSpecialist.add_data))
+@router.message(StateFilter(FSMAddSpeciality.add_data))
+async def warning_not_add(message: Message):
     await message.answer(text=LEXICON_RU['wrong'])
+
+
+
 
 
 

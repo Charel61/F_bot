@@ -4,11 +4,9 @@ from aiogram.filters.state import State, StatesGroup
 
 
 
-# Cоздаем класс, наследуемый от StatesGroup, для группы состояний нашей FSM
+# Cоздаем класс, наследуемый от StatesGroup, для группы состояний заполнения анкеты
 class FSMFillForm(StatesGroup):
-    # Создаем экземпляры класса State, последовательно
-    # перечисляя возможные состояния, в которых будет находиться
-    # бот в разные моменты взаимодейтсвия с пользователем
+
 
     fill_name = State()        # Состояние ожидания ввода имени
     fill_age = State()         # Состояние ожидания ввода возраста
@@ -23,7 +21,14 @@ class FSMFillForm(StatesGroup):
     fill_send_data = State()   # Состояние ожидания выбора отправлять ли анкету администратору
 
 
+# Cоздаем класс, наследуемый от StatesGroup, для группы состояний управления БД
+class FSMManager(StatesGroup):
 
+    manage_db = State() Состояние управления БД
+    show_specialities = State() Состояние просмотра списка специальности
+
+
+# Cоздаем класс, наследуемый от StatesGroup, для группы состояний добавления спцеалиста в БД
 class FSMAddSpecialist(StatesGroup):
 
 
@@ -32,8 +37,9 @@ class FSMAddSpecialist(StatesGroup):
     fill_expirience = State()
     add_data = State()
 
-class FSMManager(StatesGroup):
 
-     manage_db = State()
+# Cоздаем класс, наследуемый от StatesGroup, для группы состояний добавления спцеальности в БД
+class FSMAddSpeciality(StatesGroup):
 
-class FSMAddSpeciality
+    add_data = State()
+    add_speciality = State()

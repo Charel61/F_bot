@@ -1,5 +1,5 @@
 
-from aiogram.filters import Command, CommandStart, StateFilter, Text
+from aiogram.filters import Command, StateFilter, Text
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from utils.utils import get_dates, get_time_list
@@ -361,7 +361,7 @@ async def process_showdata_command(message: Message):
     if  user:
         await message.answer(
 
-            text= user['text'])
+            text = user['text'])
     else:
         # Если анкеты пользователя в базе нет - предлагаем заполнить
         await message.answer(text=LEXICON_RU['didnt_fill'])

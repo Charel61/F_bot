@@ -24,8 +24,9 @@ class FSMFillForm(StatesGroup):
 # Cоздаем класс, наследуемый от StatesGroup, для группы состояний управления БД
 class FSMManager(StatesGroup):
 
-    manage_db = State() Состояние управления БД
-    show_specialities = State() Состояние просмотра списка специальности
+    manage_db = State() #Состояние управления БД
+    choice_specialities = State() #Состояние просмотра списка специальности
+    choice_specialist = State()
 
 
 # Cоздаем класс, наследуемый от StatesGroup, для группы состояний добавления спцеалиста в БД

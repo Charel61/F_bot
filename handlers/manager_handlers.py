@@ -12,7 +12,7 @@ from filters.filters import IsNameSurname, IsSpeciality, IsNotAdmin
 
 from lexicon.lexicon import LEXICON_RU
 from keyboards.keyboard import create_inline_kb
-from database.accessors import get_list_specialities, get_speciality_id, get_speciality, add_specialist, add_speciality
+from database.accessors import get_list_specialities, get_speciality_id, get_speciality, add_specialist, add_speciality, get_list_specialists
 from config_data.config import load_config, Config
 
 router: Router = Router()
@@ -87,7 +87,7 @@ async def procces_add_specialist_speciality(callback: CallbackQuery, state: FSMC
 # Этот хэндлер будет срабатывать, если во время ввода cспециальности
 # будет введено что-то некорректное
 @router.message(StateFilter(FSMAddSpecialist.fill_speciality))
-@router.message(StateFilter(FSMAddSpeciality.add_speciality))
+# @router.message(StateFilter(FSMAddSpeciality.add_speciality))
 async def warning_not_speciality(message: Message):
     await message.answer(text=LEXICON_RU['wrong'])
 
@@ -160,17 +160,48 @@ async def process_add_specialist_to_db(callback: CallbackQuery, state: FSMContex
     await state.clear()
 
 
-
-
-
-
-
 # Этот хэндлер будет срабатывать, если во время подтверждения
 # будет введено что-то некорректное
 @router.message(StateFilter(FSMAddSpecialist.add_data))
 @router.message(StateFilter(FSMAddSpeciality.add_data))
+
 async def warning_not_add(message: Message):
     await message.answer(text=LEXICON_RU['wrong'])
+
+
+# Этот хэндлер будет срабатывать на комманду /show_specialist
+@router.message(Command(commands='show_specialist'),StateFilter(FSMManager.manage_db))
+async def procces_show_specialities(message: Message, state: FSMContext):
+    list_specialities = await get_list_specialities()
+    markup=create_inline_kb(1,*list_specialities, last_btn='back' )
+
+    await message.answer(text=LEXICON_RU['choice_speciality'], reply_markup=markup)
+    await state.set_state(FSMManager.choice_specialities)
+
+
+# Этот хэндлер будет срабатывать при правильно введенной специальности и предлагать
+# выбрать специалиста
+@router.callback_query(IsSpeciality(),StateFilter(FSMManager.choice_specialities))
+async def procces_choice_specialist(callback: CallbackQuery, state: FSMContext):
+    speciality_id = await get_speciality_id(callback.data)
+    list_specialists = await get_list_specialists(speciality_id)
+    markup = create_inline_kb(1, *list_specialists,last_btn='back')
+    await callback.message.delete()
+    await callback.message.answer(text = f'Для просмотра информации о специалисте нажмите нужную кнопку', reply_markup=markup)
+    await state.set_state(FSMManager.choice_specialist)
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

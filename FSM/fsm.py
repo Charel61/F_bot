@@ -26,7 +26,14 @@ class FSMFillForm(StatesGroup):
 
 class FSMAddSpecialist(StatesGroup):
 
+
     fill_name = State()
     fill_speciality = State()
     fill_expirience = State()
     add_data = State()
+
+class FSMManager(StatesGroup):
+
+     manage_db = State()
+
+class FSMAddSpeciality

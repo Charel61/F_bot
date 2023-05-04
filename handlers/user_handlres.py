@@ -14,7 +14,9 @@ from database.accessors import add_user, change_user, get_user
 from lexicon.lexicon import LEXICON_RU
 from keyboards.keyboard import create_inline_kb
 from config_data.config import load_config, Config
-from filters.filters import IsNameSurname, IsSpecialist, IsNotAdmin, KnownUser
+from filters.filters import IsNameSurname, IsSpecialist, IsNotAdmin, KnownUser, IsSpeciality
+from database.accessors import (get_list_specialities, get_speciality_id, get_speciality, get_list_specialists, get_specialist,
+                                )
 
 
 config: Config = load_config('.env')
@@ -178,7 +180,8 @@ async def process_choice_time(callback: CallbackQuery, state: FSMContext ):
     await callback.message.delete()
 
     # СОздаем клавиатуру для выбора специальности
-    markup=create_inline_kb(2,*specialist_db.keys())
+    list_specialities= await get_list_specialities()
+    markup=create_inline_kb(1,*list_specialities)
     await callback.message.answer(text=LEXICON_RU['choice_speciality'], reply_markup=markup)
     # Устанавливаем состояние ожидания выбора специальности
     await state.set_state(FSMFillForm.fill_speciality)
@@ -200,16 +203,19 @@ async def warning_not_time(message: Message):
 # этот хэндлер будет срабатывать при выборе специальности и переводить
 # пользователя в состояние выбора специалиста
 @router.callback_query(StateFilter(FSMFillForm.fill_speciality),
-                   Text(text=specialist_db.keys()))
+                   IsSpeciality())
 
 async def process_choice_speciality(callback: CallbackQuery, state: FSMContext):
-    # Cохраняем пол (callback.data нажатой кнопки) в хранилище,
+    # Cохраняем  (callback.data нажатой кнопки) в хранилище,
     # по ключу "speciality"
 
     await state.update_data(speciality=callback.data)
 
      # СОздаем клавиатуру для выбора специалиста
-    markup=create_inline_kb(2,*specialist_db[callback.data].keys())
+    speiality_id = await get_speciality_id(callback.data)
+    list_specialists =await get_list_specialists(speiality_id)
+
+    markup=create_inline_kb(2,*list_specialists)
     await callback.message.edit_text(text=LEXICON_RU['choice_specialist'], reply_markup=markup)
     await state.set_state(FSMFillForm.fill_specialist)
 
@@ -227,10 +233,12 @@ async def process_choice_speciality(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(StateFilter(FSMFillForm.fill_specialist),
                    IsSpecialist())
 async def process_choise_specialist(callback: CallbackQuery, state: FSMContext):
-    specialist = show_specialist(callback.data)
+    specialist = await get_specialist(callback.data)
     await state.update_data(specialist = callback.data)
     markup = create_inline_kb(2,'confirm','back')
-    await callback.message.edit_text(text=specialist['text'],reply_markup=markup)
+    await callback.message.edit_text(text=f'{specialist[0]}\n\n'
+                                  f'Специальность: {specialist[1]}\n'
+                                  f'Опыт работы по специальности: {specialist[2]} лет.',reply_markup=markup)
 
 
 # Этот хэндлер будет срабатывать, если во время ввыбора специальности или специалиста ввели что-то некорректное

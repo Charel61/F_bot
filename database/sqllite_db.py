@@ -37,6 +37,7 @@ class Speciality(Base):
 
     id = Column(Integer, primary_key=True, unique=True, index = True)
     name = Column(String, unique=True, nullable=False)
+    speciality = relationship("Specialist", cascade="all,delete")
 
     def __init__(self, name):
         self.name = name
@@ -52,7 +53,7 @@ class Specialist(Base):
     name = Column(String, nullable=False)
     experience = Column(String)
     speciality_id = Column(Integer, ForeignKey(Speciality.id))
-    speciality = relationship(Speciality, cascade="all,delete")
+
 
     def __init__(self, name, experience, speciality_id):
         self.name = name

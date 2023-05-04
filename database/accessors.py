@@ -80,24 +80,32 @@ async def add_specialist(name: str, experience:int, speciality_id: int):
         stmt = select(Specialist).where(Specialist.name == name, Specialist.speciality_id == speciality_id)
         if not session.scalar(stmt):
 
-            speciality = Specialist(name, experience, speciality_id)
-            session.add(speciality)
+            specialist = Specialist(name, experience, speciality_id)
+            session.add(specialist)
 
         session.commit()
 
 # получения списка специалистов по специальности
-async def get_list_specialists(speciality_id):
+async def get_list_specialists(speciality_id=None):
     with Session(engine) as session:
-        stmt = select(Specialist.name).where(Specialist.speciality_id==speciality_id)
+        if speciality_id:
+            stmt = select(Specialist.name).where(Specialist.speciality_id==speciality_id)
+        else:
+            stmt = select(Specialist.name)
+
         return session.scalars(stmt).all()
 
+# Получение информации о специалисте
+async def get_specialist(name):
+    with Session(engine) as session:
+        stmt = select(Specialist.name, Speciality.name, Specialist.experience, Specialist.id ) .join_from(Specialist, Speciality,  Speciality.id==Specialist.speciality_id).where(Specialist.name==name)
+        return session.execute(stmt).one()
 
 
+async def del_specialist(id):
+    with Session(engine) as session:
 
-
-
-
-
-
-# list_speciality=asyncio.run(get_list_specialists(1))
-# print(list_speciality)
+        specialist = session.scalar(select(Specialist).where(Specialist.id==id))
+        if specialist:
+            session.delete(specialist)
+        session.commit()

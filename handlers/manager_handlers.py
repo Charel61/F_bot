@@ -8,11 +8,12 @@ from aiogram.types import  Message, CallbackQuery
 
 from aiogram import Router
 from aiogram.fsm.context import FSMContext
-from filters.filters import IsNameSurname, IsSpeciality, IsNotAdmin
+from filters.filters import IsNameSurname, IsSpeciality, IsNotAdmin, IsSpecialist
 
 from lexicon.lexicon import LEXICON_RU
 from keyboards.keyboard import create_inline_kb
-from database.accessors import get_list_specialities, get_speciality_id, get_speciality, add_specialist, add_speciality, get_list_specialists
+from database.accessors import (get_list_specialities, get_speciality_id, get_speciality, add_specialist, add_speciality, get_list_specialists, get_specialist,
+                                del_specialist)
 from config_data.config import load_config, Config
 
 router: Router = Router()
@@ -173,7 +174,7 @@ async def warning_not_add(message: Message):
 @router.message(Command(commands='show_specialist'),StateFilter(FSMManager.manage_db))
 async def procces_show_specialities(message: Message, state: FSMContext):
     list_specialities = await get_list_specialities()
-    markup=create_inline_kb(1,*list_specialities, last_btn='back' )
+    markup=create_inline_kb(1,*list_specialities, 'back' )
 
     await message.answer(text=LEXICON_RU['choice_speciality'], reply_markup=markup)
     await state.set_state(FSMManager.choice_specialities)
@@ -185,12 +186,71 @@ async def procces_show_specialities(message: Message, state: FSMContext):
 async def procces_choice_specialist(callback: CallbackQuery, state: FSMContext):
     speciality_id = await get_speciality_id(callback.data)
     list_specialists = await get_list_specialists(speciality_id)
-    markup = create_inline_kb(1, *list_specialists,last_btn='back')
+    markup = create_inline_kb(1, *list_specialists,'back')
     await callback.message.delete()
     await callback.message.answer(text = f'Для просмотра информации о специалисте нажмите нужную кнопку', reply_markup=markup)
     await state.set_state(FSMManager.choice_specialist)
 
 
+# Этот хэндлер будет срабатывать при нажатии кнопки вернутсья и предлагать ввести команду
+@router.callback_query(Text(text='back'),StateFilter(FSMManager.choice_specialities))
+async def process_back_press(callback: CallbackQuery, state: FSMContext):
+    await callback.message.answer(text=LEXICON_RU['/start_manager'])
+    await state.set_state(FSMManager.manage_db)
+
+# этот хэндлер будет срабатывать если при выборе специальности будет отправлено что-то некорректное
+@router.message(StateFilter(FSMManager.choice_specialities))
+async def process_back_press(message: Message):
+    await message.answer(text=LEXICON_RU['wrong_but'])
+
+
+
+
+
+
+# Этот хэндлер будет срабатывать при правильно выбраном специалисте и показывать информацию о нем
+@router.callback_query( IsSpecialist(),StateFilter(FSMManager.choice_specialist))
+async def process_show_specialist(callback: CallbackQuery, state: FSMContext):
+    specialist = await get_specialist(name=callback.data)
+    markup=create_inline_kb(2,'back','edit', 'delete')
+    await state.update_data(specialist_id=specialist[3])
+    await callback.message.answer(text=f'{specialist[0]}\n\n'
+                                  f'Специальность: {specialist[1]}\n'
+                                  f'Опыт работы по специальности: {specialist[2]} лет.', reply_markup=markup)
+    await state.set_state(FSMManager.show_specialist)
+
+# Этот хэндлер будет срабатывать при нажатии кнопки вернутсья и предлагать ввести специальность
+@router.callback_query(Text(text='back'),StateFilter(FSMManager.choice_specialist))
+async def process_back_press_2(callback:CallbackQuery, state: FSMContext):
+    list_specialities = await get_list_specialities()
+    markup=create_inline_kb(1,*list_specialities, 'back' )
+
+    await callback.message.answer(text=LEXICON_RU['choice_speciality'], reply_markup=markup)
+    await state.set_state(FSMManager.choice_specialities)
+#
+#
+#  этот хэндлер будет срабатывать если при выборе специалиста будет отправлено что-то некорректное
+@router.message(StateFilter(FSMManager.choice_specialist))
+async def process_back_press(message: Message):
+    await message.answer(text=LEXICON_RU['wrong_but'])
+
+
+# Этот хэндлер будет срабатывать при нажатии кнопки вернутсья при просмотре данных о специалисте
+@router.callback_query(Text(text='back'),StateFilter(FSMManager.show_specialist))
+async def process_back_press_2(callback: CallbackQuery, state: FSMContext):
+    list_specialities = await get_list_specialities()
+    markup=create_inline_kb(1,*list_specialities, 'back' )
+
+    await callback.message.answer(text=LEXICON_RU['choice_speciality'], reply_markup=markup)
+    await state.clear()
+    await state.set_state(FSMManager.choice_specialities)
+
+
+@router.callback_query(Text(text='delete'),StateFilter(FSMManager.show_specialist))
+async def process_del_specialist(callback: CallbackQuery, state: FSMContext):
+    data= await state.get_data()
+    specialist_id = data['specialist_id']
+    await del_specialist(specialist_id)
 
 
 
@@ -208,6 +268,10 @@ async def procces_choice_specialist(callback: CallbackQuery, state: FSMContext):
 
 
 
+
+@router.message(StateFilter(FSMManager.manage_db))
+async def send_echo(message: Message):
+    await message.answer(text=LEXICON_RU['/start_manager'])
 
 # Этот хэндлер будет срабатывать на любые сообщения, кроме тех
 # для которых есть отдельные хэндлеры, вне состояний

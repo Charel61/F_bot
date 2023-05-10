@@ -21,6 +21,7 @@ class User(Base):
     gender =  Column(String)
     age = Column(Integer)
     wish_news = Column(Boolean, default=True)
+    user = relationship("Order", cascade="all,delete")
 
     def __init__(self, user_id, name,gender,age, wish_news ):
         self.user_id = user_id
@@ -53,6 +54,8 @@ class Specialist(Base):
     name = Column(String, nullable=False)
     experience = Column(String)
     speciality_id = Column(Integer, ForeignKey(Speciality.id))
+    specialist = relationship("Order", cascade="all,delete")
+
 
 
     def __init__(self, name, experience, speciality_id):
@@ -63,6 +66,32 @@ class Specialist(Base):
 
     def __repr__(self):
         return "<Specialist('%s','%s','%s')>" % (self.name, self.speciality_id, self.experience)
+
+class Order(Base):
+    __tablename__ = "orders"
+    id = Column(Integer, primary_key=True, unique=True, index = True)
+    user_id=Column(Integer, ForeignKey(User.id), nullable=False)
+    specialist_id=Column(Integer, ForeignKey(Specialist.id),nullable=False)
+
+    date_of_vizit=Column(String, nullable=False)
+    time_of_vizit=Column(String, nullable=False)
+
+
+    def __init__(self, user_id, specialist_id, date_of_vizit, time_of_vizit):
+        self.user_id = user_id
+        self.specialist_id = specialist_id
+        self.date_of_vizit = date_of_vizit
+        self.time_of_vizit = time_of_vizit
+
+    def __repr__(self):
+        return "<Order('%s','%s','%s','%s')>" % (self.user_id, self.specialist_id, self.date_of_vizit, self.time_of_vizit)
+
+
+
+
+
+
+
 
 
 Base.metadata.create_all(engine)

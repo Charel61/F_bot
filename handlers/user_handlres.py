@@ -8,15 +8,16 @@ from datetime import date
 
 from aiogram import Router, F
 from FSM.fsm import FSMFillForm
-from database.database import show_user,user_db, specialist_db, show_specialist
+from database.database import show_user,user_db
 from database.accessors import add_user, change_user, get_user
+from database.sqllite_db import Order
 
 from lexicon.lexicon import LEXICON_RU
 from keyboards.keyboard import create_inline_kb
 from config_data.config import load_config, Config
 from filters.filters import IsNameSurname, IsSpecialist, IsNotAdmin, KnownUser, IsSpeciality
 from database.accessors import (get_list_specialities, get_speciality_id, get_speciality, get_list_specialists, get_specialist,
-                                )
+                                add_order, show_order)
 
 
 config: Config = load_config('.env')
@@ -234,7 +235,7 @@ async def process_choice_speciality(callback: CallbackQuery, state: FSMContext):
                    IsSpecialist())
 async def process_choise_specialist(callback: CallbackQuery, state: FSMContext):
     specialist = await get_specialist(callback.data)
-    await state.update_data(specialist = callback.data)
+    await state.update_data(specialist = specialist[0], speciality=specialist[1] )
     markup = create_inline_kb(2,'confirm','back')
     await callback.message.edit_text(text=f'{specialist[0]}\n\n'
                                   f'Специальность: {specialist[1]}\n'
@@ -286,15 +287,18 @@ async def process_wish_news_press(callback: CallbackQuery, state: FSMContext):
 
     # Добавляем в "базу данных" анкету пользователя
     # по ключу id пользователя
-    user_db[callback.from_user.id] = await state.get_data()
+    user_data = await state.get_data()
     await add_user(user_id=callback.from_user.id,
-                name=user_db[callback.from_user.id]['name'],
-                gender=user_db[callback.from_user.id]['gender'],
-                age=user_db[callback.from_user.id]['age'],
-                wish_news=user_db[callback.from_user.id]['wish_news'])
+                name=user_data['name'],
+                gender=user_data['gender'],
+                age=user_data['age'],
+                wish_news=user_data['wish_news'])
     markup = create_inline_kb(2,'send','do_not_send')
+    specialist_id=await get_specialist(user_data['specialist'])
+    speciality_id=await get_speciality_id(user_data['speciality'])
+    await add_order(user_id=callback.from_user.id, specialist_id=specialist_id, date_of_vizit=user_data['date_of_vizit'], time_of_vizit=user_data['time_of_vizit'])
 
-    user = show_user(callback.from_user.id)
+    user = await show_user(callback.from_user.id)
 
     await callback.message.answer(
 
@@ -315,18 +319,26 @@ async def process_wish_news_press_for_known_user(callback: CallbackQuery, state:
 
     # Добавляем в "базу данных" анкету пользователя
     # по ключу id пользователя
-    user_db[callback.from_user.id] = await state.get_data()
+    user_data = await state.get_data()
     user = await get_user(callback.from_user.id)
+    specialist=await get_specialist(user_data['specialist'])
+
+
     await change_user(user_id=user.user_id, name=user.name, gender=user.gender,
                 age=user.age,
-                wish_news=user_db[callback.from_user.id]['wish_news'])
+                wish_news=user_data['wish_news'])
     markup = create_inline_kb(2,'send','do_not_send')
 
-    user = await show_user(callback.from_user.id)
+    order = Order(user_id=user.user_id, specialist_id=specialist.id, date_of_vizit=user_data['date_of_vizit'], time_of_vizit=user_data['time_of_vizit'])
+    await add_order(order)
+    text = await show_order(order)
+
+
+
 
     await callback.message.answer(
 
-            text=user['text'],reply_markup=markup)
+            text=text['text'],reply_markup=markup)
 
 
 

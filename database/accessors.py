@@ -1,7 +1,8 @@
-from database.sqllite_db import engine, User,Speciality, Specialist
+from database.sqllite_db import engine, User,Speciality, Specialist, Order
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 import asyncio
+
 
 
 # aДобавляет пользователя в базу данных
@@ -102,6 +103,13 @@ async def get_specialist(name):
         return session.execute(stmt).one()
 
 
+async def get_specialist_by_id(id: int):
+    with Session(engine) as session:
+        stmt = select(Specialist.name, Speciality.name, Specialist.experience, Specialist.id ) .join_from(Specialist, Speciality,  Speciality.id==Specialist.speciality_id).where(Specialist.id==id)
+        return session.execute(stmt).one()
+
+
+
 async def del_specialist(id):
     with Session(engine) as session:
 
@@ -109,3 +117,50 @@ async def del_specialist(id):
         if specialist:
             session.delete(specialist)
         session.commit()
+
+
+
+async def add_order(order):
+    with Session(engine) as session:
+
+        session.add(order)
+        session.commit()
+
+
+async def get_order(id):
+    with Session(engine) as session:
+        stmt = select(Order).where(Order.id==id)
+        return session.scalar(stmt)
+
+
+
+async def show_order(order: Order) -> dict|bool:
+    with Session(engine) as session:
+        stmt = select(User).where(User.user_id==order.user_id)
+        user = session.scalar(stmt)
+        stmt = select(Specialist.name, Speciality.name) .join_from(Specialist, Speciality,  Speciality.id==Specialist.speciality_id).where(Specialist.id==order.specialist_id)
+
+        specialist = session.execute(stmt).one()
+
+
+
+
+        if order:
+            return {
+                    'text':f'Имя: {user.name}\n'
+                        f'Возраст: {user.age}\n'
+                        f'Пол: {user.gender}\n'
+                        f'Дата посещения: {order.date_of_vizit}\n'
+                        f'Время посещения: {order.time_of_vizit}\n'
+                        f'Специальность: {specialist[1]}\n'
+                        f'Специалист: {specialist[0]}\n'
+                        f'Получать новости: {user.wish_news}'
+                        }
+
+        else:
+            return False
+
+
+# order = asyncio.run(get_order(2))
+# # asyncio.run(add_order(order))
+# print(asyncio.run(show_order(order)))

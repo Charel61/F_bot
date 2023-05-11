@@ -269,32 +269,25 @@ async def process_del_specialist_confirm(callback: CallbackQuery, state: FSMCont
     await callback.message.answer(text=LEXICON_RU['/manage_db'])
 
 
+# Этот хэндлер будет срабатывать при нажатии кнопки редактировать при просмотре данных о специалисте
+
+
+@router.callback_query(Text(text='edit'),StateFilter(FSMManager.show_specialist))
+async def process_edit_specialist(message: Message, callback: CallbackQuery, state: StateFilter):
+    data= await state.get_data()
+    specialist_id = data['specialist_id']
+# TODO: дописать процедуру редактирования специалиста
+
+
+
 # Этот хэндлер будет срабатывать если при просмотре специалиста будет введено что-нибудь неверное
 @router.message(StateFilter(FSMManager.show_specialist))
 async def process_wrong_show_specialist(message: Message):
     await message.answer(text=LEXICON_RU['wrong_but'])
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# TODO: написать процедуру просмотра, удаления и редактирования специальности.
+# TODO: написать процедуру просмотра заказов.
 
 
 

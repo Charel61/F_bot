@@ -28,6 +28,7 @@ class FSMManager(StatesGroup):
     choice_specialities = State() #Состояние просмотра списка специальности
     choice_specialist = State()
     show_specialist = State()
+    edit_specialist= State()
 
 
 # Cоздаем класс, наследуемый от StatesGroup, для группы состояний добавления спцеалиста в БД

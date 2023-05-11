@@ -10,10 +10,11 @@ from aiogram import Router
 from aiogram.fsm.context import FSMContext
 from filters.filters import IsNameSurname, IsSpeciality, IsNotAdmin, IsSpecialist
 
+
 from lexicon.lexicon import LEXICON_RU
 from keyboards.keyboard import create_inline_kb
 from database.accessors import (get_list_specialities, get_speciality_id, get_speciality, add_specialist, add_speciality, get_list_specialists, get_specialist,
-                                del_specialist)
+                                del_specialist, get_specialist_by_id)
 from config_data.config import load_config, Config
 
 router: Router = Router()
@@ -231,7 +232,7 @@ async def process_back_press_2(callback:CallbackQuery, state: FSMContext):
 #
 #  этот хэндлер будет срабатывать если при выборе специалиста будет отправлено что-то некорректное
 @router.message(StateFilter(FSMManager.choice_specialist))
-async def process_back_press(message: Message):
+async def process_back_press_wrong(message: Message):
     await message.answer(text=LEXICON_RU['wrong_but'])
 
 
@@ -245,12 +246,40 @@ async def process_back_press_2(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await state.set_state(FSMManager.choice_specialities)
 
-
+# Этот хэндлер будет срабатывать при нажатии кнопки удалить при просмотре данных о специалисте
 @router.callback_query(Text(text='delete'),StateFilter(FSMManager.show_specialist))
 async def process_del_specialist(callback: CallbackQuery, state: FSMContext):
     data= await state.get_data()
     specialist_id = data['specialist_id']
+    specialist = await get_specialist_by_id(specialist_id)
+
+    markup = create_inline_kb(2,'confirm', 'back')
+    await callback.message.answer(text=f'{LEXICON_RU["shure_del_spec"]} \n {specialist[0]} \n {specialist[1]}', reply_markup=markup)
+
+
+
+# Этот хэндлер будет срабатывать при нажатии кнопки подтвердить при запросе удаления специалиста
+@router.callback_query(Text(text='confirm'), StateFilter(FSMManager.show_specialist))
+async def process_del_specialist_confirm(callback: CallbackQuery, state: FSMContext):
+    data= await state.get_data()
+    specialist_id = data['specialist_id']
     await del_specialist(specialist_id)
+    await callback.message.delete()
+    await state.clear()
+    await callback.message.answer(text=LEXICON_RU['/manage_db'])
+
+
+# Этот хэндлер будет срабатывать если при просмотре специалиста будет введено что-нибудь неверное
+@router.message(StateFilter(FSMManager.show_specialist))
+async def process_wrong_show_specialist(message: Message):
+    await message.answer(text=LEXICON_RU['wrong_but'])
+
+
+
+
+
+
+
 
 
 

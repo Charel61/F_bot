@@ -2,6 +2,7 @@ from database.sqllite_db import engine, User,Speciality, Specialist, Order
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 import asyncio
+from lexicon.lexicon import LEXICON_RU
 
 
 
@@ -149,12 +150,12 @@ async def show_order(order: Order) -> dict|bool:
             return {
                     'text':f'Имя: {user.name}\n'
                         f'Возраст: {user.age}\n'
-                        f'Пол: {user.gender}\n'
+                        f'Пол: {LEXICON_RU[user.gender]}\n'
                         f'Дата посещения: {order.date_of_vizit}\n'
                         f'Время посещения: {order.time_of_vizit}\n'
                         f'Специальность: {specialist[1]}\n'
                         f'Специалист: {specialist[0]}\n'
-                        f'Получать новости: {user.wish_news}'
+                        f'Дата и время заказа: {order.time_of_order}'
                         }
 
         else:

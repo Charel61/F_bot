@@ -121,7 +121,7 @@ async def del_specialist(id):
 
 
 async def add_order(order):
-    with Session(engine) as session:
+    with Session(engine, expire_on_commit=False) as session:
 
         session.add(order)
         session.commit()

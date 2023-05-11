@@ -1,6 +1,6 @@
 from sqlalchemy.orm import DeclarativeBase, relationship
 from sqlalchemy import select, ForeignKey, create_engine, Column, Integer, String, ForeignKey, Boolean
-
+from datetime import datetime
 
 
 
@@ -70,15 +70,17 @@ class Specialist(Base):
 class Order(Base):
     __tablename__ = "orders"
     id = Column(Integer, primary_key=True, unique=True, index = True)
-    user_id=Column(Integer, ForeignKey(User.id), nullable=False)
-    specialist_id=Column(Integer, ForeignKey(Specialist.id),nullable=False)
 
+    user_id=Column(Integer, ForeignKey(User.id), nullable=False)
+    time_of_order = Column(String, nullable=False)
+    specialist_id=Column(Integer, ForeignKey(Specialist.id),nullable=False)
     date_of_vizit=Column(String, nullable=False)
     time_of_vizit=Column(String, nullable=False)
 
 
     def __init__(self, user_id, specialist_id, date_of_vizit, time_of_vizit):
         self.user_id = user_id
+        self.time_of_order = str(datetime.now())[:16]
         self.specialist_id = specialist_id
         self.date_of_vizit = date_of_vizit
         self.time_of_vizit = time_of_vizit

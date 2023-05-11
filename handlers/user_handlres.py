@@ -294,15 +294,16 @@ async def process_wish_news_press(callback: CallbackQuery, state: FSMContext):
                 age=user_data['age'],
                 wish_news=user_data['wish_news'])
     markup = create_inline_kb(2,'send','do_not_send')
-    specialist_id=await get_specialist(user_data['specialist'])
-    speciality_id=await get_speciality_id(user_data['speciality'])
-    await add_order(user_id=callback.from_user.id, specialist_id=specialist_id, date_of_vizit=user_data['date_of_vizit'], time_of_vizit=user_data['time_of_vizit'])
+    specialist=await get_specialist(user_data['specialist'])
+    order = Order(user_id=callback.from_user.id, specialist_id=specialist.id, date_of_vizit=user_data['date_of_vizit'], time_of_vizit=user_data['time_of_vizit'])
 
-    user = await show_user(callback.from_user.id)
+    await add_order(order)
+
+    text = await show_order(order)
 
     await callback.message.answer(
 
-            text=user['text'],reply_markup=markup)
+            text=text['text'],reply_markup=markup)
 
 
 # Этот хэндлер будет срабатывать на выбор получать или

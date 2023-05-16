@@ -14,7 +14,7 @@ from filters.filters import IsNameSurname, IsSpeciality, IsNotAdmin, IsSpecialis
 from lexicon.lexicon import LEXICON_RU
 from keyboards.keyboard import create_inline_kb
 from database.accessors import (get_list_specialities, get_speciality_id, get_speciality, add_specialist, add_speciality, get_list_specialists, get_specialist,
-                                del_specialist, get_specialist_by_id)
+                                del_specialist, get_specialist_by_id, edit_speciality)
 from config_data.config import load_config, Config
 
 router: Router = Router()
@@ -161,13 +161,18 @@ async def procces_add_specialist_name(message: Message, state: FSMContext):
 
 
 
-
+# TODO: доделать процедуру, не добавляется мать ее
 # Этот хэндлер будет срабатывать при подтверждении или отмене ввода данных
 @router.callback_query(Text(text=['confirm','back']), StateFilter(FSMAddSpeciality.add_data))
 async def process_add_specialist_to_db(callback: CallbackQuery, state: FSMContext):
     if callback.data == 'confirm':
-        specialist = await state.get_data()
-        await add_speciality(specialist['speciality'])
+        speciality = await state.get_data()
+        speciality_id = await get_speciality_id(speciality['speciality'])
+        if not speciality_id:
+            await add_speciality(speciality['speciality'] )
+        else:
+            speciality_id = await get_speciality_id(speciality['old_name_speciality'])
+            await edit_speciality(speciality_id,speciality['speciality'])
     await callback.message.delete()
     await callback.message.answer(text=LEXICON_RU['/manage_db'])
     await state.clear()
@@ -301,7 +306,7 @@ async def process_show_speciality(message: Message, state: FSMContext):
 @router.callback_query(IsSpeciality(), StateFilter(FSMManager.edit_speciality))
 async def process_choice_action_with_speciality(callback: CallbackQuery, state: FSMContext):
 
-    await state.update_data(speciality=callback.data)
+    await state.update_data(old_name_speciality=callback.data)
     markup = create_inline_kb(2, 'edit','delete', 'back')
 
     await callback.message.answer(text=f'{callback.data}\n\n{LEXICON_RU["choice_action"]}',reply_markup=markup)

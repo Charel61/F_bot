@@ -54,11 +54,20 @@ async def add_speciality(name: str):
 
             speciality =Speciality(name)
             session.add(speciality)
-        else:
-            stmt=update(Speciality).where(Speciality.name==name).values(name=name)
+
+async def edit_speciality(id: int, new_name: str):
+    with Session(engine) as session:
+        stmt = select(Speciality).where(Speciality.id == id)
+        if session.scalar(stmt):
+            stmt=update(Speciality).where(Speciality.id==id).values(name=new_name)
             session.execute(stmt)
 
         session.commit()
+
+
+
+
+
 # получение специальности по id
 async def get_speciality(id: int):
     with Session(engine) as session:

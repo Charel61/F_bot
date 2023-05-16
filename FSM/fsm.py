@@ -29,6 +29,7 @@ class FSMManager(StatesGroup):
     choice_specialist = State()
     show_specialist = State()
     edit_specialist= State()
+    edit_speciality=State()
 
 
 # Cоздаем класс, наследуемый от StatesGroup, для группы состояний добавления спцеалиста в БД
@@ -39,6 +40,9 @@ class FSMAddSpecialist(StatesGroup):
     fill_speciality = State()
     fill_expirience = State()
     add_data = State()
+
+
+
 
 
 # Cоздаем класс, наследуемый от StatesGroup, для группы состояний добавления спцеальности в БД

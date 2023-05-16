@@ -1,6 +1,6 @@
 from database.sqllite_db import engine, User,Speciality, Specialist, Order
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select,update
 import asyncio
 from lexicon.lexicon import LEXICON_RU
 
@@ -54,6 +54,9 @@ async def add_speciality(name: str):
 
             speciality =Speciality(name)
             session.add(speciality)
+        else:
+            stmt=update(Speciality).where(Speciality.name==name).values(name=name)
+            session.execute(stmt)
 
         session.commit()
 # получение специальности по id
@@ -84,6 +87,10 @@ async def add_specialist(name: str, experience:int, speciality_id: int):
 
             specialist = Specialist(name, experience, speciality_id)
             session.add(specialist)
+
+        else:
+            stmt=update(Specialist).where(Specialist.id==id).values(name=name, experience=experience,speciality_id=speciality_id)
+            session.execute(stmt)
 
         session.commit()
 

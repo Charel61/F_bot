@@ -1,8 +1,3 @@
-
-
-
-
-
 from aiogram.filters import CommandStart, StateFilter
 from aiogram.fsm.state import default_state
 

@@ -49,16 +49,24 @@ async def process_manage_db_command_state(message: Message, state: FSMContext):
 # Этот хэндлер будет срабатывать на команду /add_specialist в состоянии управления БД
 # и предлагать добавить специалиста в базу данных
 @router.message(Command(commands='add_specialist'),StateFilter(FSMManager.manage_db))
+
 async def procces_add_specialist(message: Message, state: FSMContext):
     await message.answer(text=LEXICON_RU['/add_specialist'])
     await state.set_state(FSMAddSpecialist.fill_name)
 
+
+# Этот хэндлер будет срабатывать при нажатии кнопки редактировать при просмотре данных о специалисте
+@router.callback_query(Text(text='edit'),StateFilter(FSMManager.show_specialist))
+async def procces_edit_specialist(callback: CallbackQuery, state: FSMContext):
+    await callback.message.answer(text=LEXICON_RU['/edit_specialist'])
+    await state.set_state(FSMAddSpecialist.fill_name)
 
 
 
 # Этот хэндлер будет срабатывать при правильно введенном имени и фамилии и предлагать выбрать
 # специальность
 @router.message(IsNameSurname(), StateFilter(FSMAddSpecialist.fill_name))
+
 async def procces_add_specialist_name(message: Message, state: FSMContext):
     await state.update_data(name_specialist=message.text)
     list_specialities =await get_list_specialities()
@@ -70,6 +78,8 @@ async def procces_add_specialist_name(message: Message, state: FSMContext):
 # Этот хэндлер будет срабатывать, если во время ввода имени
 # будет введено что-то некорректное
 @router.message(StateFilter(FSMAddSpecialist.fill_name))
+
+
 async def warning_not_name(message: Message):
     await message.answer(text=LEXICON_RU['wrong_name'])
 
@@ -139,10 +149,11 @@ async def procces_add_specialist(message: Message, state: FSMContext):
 
 # Этот хэндлер будет срабатывать при правильно введенной специальности и предлагать сохранить данные
 @router.message(IsNameSurname(), StateFilter(FSMAddSpeciality.add_speciality))
+@router.message(IsNameSurname(), StateFilter(FSMManager.edit_speciality))
 async def procces_add_specialist_name(message: Message, state: FSMContext):
     await state.update_data(speciality=message.text)
     markup = create_inline_kb(2,'confirm','back')
-    await message.reply(text=f'Добоавить в БД специальность {message.text}?',reply_markup=markup)
+    await message.reply(text=f'Подтвердите наименование специальности {message.text}?',reply_markup=markup)
     await state.set_state(FSMAddSpeciality.add_data)
 
 
@@ -200,6 +211,7 @@ async def process_back_press(callback: CallbackQuery, state: FSMContext):
     await state.set_state(FSMManager.manage_db)
 
 # этот хэндлер будет срабатывать если при выборе специальности будет отправлено что-то некорректное
+@router.message(StateFilter(FSMManager.edit_speciality))
 @router.message(StateFilter(FSMManager.choice_specialities))
 async def process_back_press(message: Message):
     await message.answer(text=LEXICON_RU['wrong_but'])
@@ -269,24 +281,51 @@ async def process_del_specialist_confirm(callback: CallbackQuery, state: FSMCont
     await callback.message.answer(text=LEXICON_RU['/manage_db'])
 
 
-# Этот хэндлер будет срабатывать при нажатии кнопки редактировать при просмотре данных о специалисте
-
-
-@router.callback_query(Text(text='edit'),StateFilter(FSMManager.show_specialist))
-async def process_edit_specialist(message: Message, callback: CallbackQuery, state: StateFilter):
-    data= await state.get_data()
-    specialist_id = data['specialist_id']
-# TODO: дописать процедуру редактирования специалиста
-
-
-
 # Этот хэндлер будет срабатывать если при просмотре специалиста будет введено что-нибудь неверное
 @router.message(StateFilter(FSMManager.show_specialist))
 async def process_wrong_show_specialist(message: Message):
     await message.answer(text=LEXICON_RU['wrong_but'])
 
 
+
+
+
 # TODO: написать процедуру просмотра, удаления и редактирования специальности.
+@router.message(Command(commands='edit_speciality'),StateFilter(FSMManager.manage_db))
+async def process_show_speciality(message: Message, state: FSMContext):
+    list_specialities = await get_list_specialities()
+    markup=create_inline_kb(1,*list_specialities, 'back' )
+    await message.answer(text=LEXICON_RU['edit_speciality'],reply_markup=markup)
+    await state.set_state(FSMManager.edit_speciality)
+
+@router.callback_query(IsSpeciality(), StateFilter(FSMManager.edit_speciality))
+async def process_choice_action_with_speciality(callback: CallbackQuery, state: FSMContext):
+
+    await state.update_data(speciality=callback.data)
+    markup = create_inline_kb(2, 'edit','delete', 'back')
+
+    await callback.message.answer(text=f'{callback.data}\n\n{LEXICON_RU["choice_action"]}',reply_markup=markup)
+
+
+@router.callback_query(Text(text='edit'), StateFilter(FSMManager.edit_speciality))
+async def process_edit_speciality(callback: CallbackQuery, state: FSMContext):
+    await callback.message.answer(text=LEXICON_RU['/add_speciality'])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # TODO: написать процедуру просмотра заказов.
 
 

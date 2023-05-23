@@ -50,10 +50,14 @@ async def change_user(user_id: int ,name: str | None,gender: str | None, age:  i
 async def add_speciality(name: str):
     with Session(engine) as session:
         stmt = select(Speciality).where(Speciality.name == name)
+
         if not session.scalar(stmt):
 
             speciality =Speciality(name)
+            print(speciality)
             session.add(speciality)
+
+        session.commit()
 
 async def edit_speciality(id: int, new_name: str):
     with Session(engine) as session:
@@ -176,8 +180,3 @@ async def show_order(order: Order) -> dict|bool:
 
         else:
             return False
-
-
-# order = asyncio.run(get_order(2))
-# # asyncio.run(add_order(order))
-# print(asyncio.run(show_order(order)))

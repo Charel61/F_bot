@@ -168,11 +168,11 @@ async def process_add_specialist_to_db(callback: CallbackQuery, state: FSMContex
     if callback.data == 'confirm':
         speciality = await state.get_data()
         speciality_id = await get_speciality_id(speciality['speciality'])
-        if not speciality_id:
-            await add_speciality(speciality['speciality'] )
-        else:
-            speciality_id = await get_speciality_id(speciality['old_name_speciality'])
-            await edit_speciality(speciality_id,speciality['speciality'])
+        print(speciality['speciality'],'_______________',speciality_id,'--------------------')
+        try:
+            await edit_speciality(await get_speciality_id(speciality['old_name_speciality']),speciality['speciality'])
+        except KeyError:
+            await add_speciality(speciality['speciality'])
     await callback.message.delete()
     await callback.message.answer(text=LEXICON_RU['/manage_db'])
     await state.clear()
@@ -312,9 +312,16 @@ async def process_choice_action_with_speciality(callback: CallbackQuery, state: 
     await callback.message.answer(text=f'{callback.data}\n\n{LEXICON_RU["choice_action"]}',reply_markup=markup)
 
 
-@router.callback_query(Text(text='edit'), StateFilter(FSMManager.edit_speciality))
+@router.callback_query(Text(text=['edit','back']), StateFilter(FSMManager.edit_speciality))
 async def process_edit_speciality(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer(text=LEXICON_RU['/add_speciality'])
+    if callback.data=='edit':
+        await callback.message.answer(text=LEXICON_RU['/add_speciality'])
+    else:
+        await callback.message.answer(text=LEXICON_RU['/manage_db'])
+        await state.clear()
+
+
+
 
 
 

@@ -14,7 +14,7 @@ from filters.filters import IsNameSurname, IsSpeciality, IsNotAdmin, IsSpecialis
 from lexicon.lexicon import LEXICON_RU
 from keyboards.keyboard import create_inline_kb
 from database.accessors import (get_list_specialities, get_speciality_id, get_speciality, add_specialist, add_speciality, get_list_specialists, get_specialist,
-                                del_specialist, get_specialist_by_id, edit_speciality)
+                                del_specialist,del_speciality, get_specialist_by_id, edit_speciality)
 from config_data.config import load_config, Config
 
 router: Router = Router()
@@ -161,8 +161,7 @@ async def procces_add_specialist_name(message: Message, state: FSMContext):
 
 
 
-# TODO: доделать процедуру, не добавляется мать ее
-# Этот хэндлер будет срабатывать при подтверждении или отмене ввода данных
+# TODO: доделать процедуру, не добавляется мать ее# Этот хэндлер будет срабатывать при подтверждении или отмене ввода данных
 @router.callback_query(Text(text=['confirm','back']), StateFilter(FSMAddSpeciality.add_data))
 async def process_add_specialist_to_db(callback: CallbackQuery, state: FSMContext):
     if callback.data == 'confirm':
@@ -295,7 +294,7 @@ async def process_wrong_show_specialist(message: Message):
 
 
 
-# TODO: написать процедуру просмотра, удаления и редактирования специальности.
+
 @router.message(Command(commands='edit_speciality'),StateFilter(FSMManager.manage_db))
 async def process_show_speciality(message: Message, state: FSMContext):
     list_specialities = await get_list_specialities()
@@ -319,6 +318,23 @@ async def process_edit_speciality(callback: CallbackQuery, state: FSMContext):
     else:
         await callback.message.answer(text=LEXICON_RU['/manage_db'])
         await state.clear()
+
+
+@router.callback_query(Text(text=['delete']), StateFilter(FSMManager.edit_speciality))
+async def process_delete_speciality(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    markup = create_inline_kb(2,'confirm','back')
+    await callback.message.answer(text=f'{LEXICON_RU["shure_del_speciality"]} {data["old_name_speciality"]}?', reply_markup=markup)
+
+@router.callback_query(Text(text=['confirm']), StateFilter(FSMManager.edit_speciality))
+async def process_confitm_delete_speciality(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    speciality_id = await get_speciality_id(data['old_name_speciality'])
+    await del_speciality(speciality_id)
+    await state.clear()
+    await callback.message.answer(text=LEXICON_RU['/manage_db'])
+
+
 
 
 

@@ -1,6 +1,6 @@
 from database.sqllite_db import engine, User,Speciality, Specialist, Order
 from sqlalchemy.orm import Session
-from sqlalchemy import select,update
+from sqlalchemy import select,update,delete
 import asyncio
 from lexicon.lexicon import LEXICON_RU
 
@@ -67,7 +67,12 @@ async def edit_speciality(id: int, new_name: str):
             session.execute(stmt)
 
         session.commit()
-
+async def del_speciality(id: int):
+    with Session(engine) as session:
+        speciality = session.scalar(select(Speciality).where(Speciality.id == id))
+        if speciality:
+            session.delete(speciality)
+        session.commit()
 
 
 
